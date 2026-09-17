@@ -1,0 +1,82 @@
+name: Auto Build and Deploy Branches
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      # develop pushes to deploycommon, main pushes to deploy
+      BUILD_COMMAND: "npm run build"
+      TARGET_BRANCH: ${{ github.ref == 'refs/heads/develop' && 'deploycommon' || 'deploy' }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build bundle
+        run: ${{ env.BUILD_COMMAND }}
+
+      - name: Write deploy trace file
+        run: |
+          mkdir -p dist
+          cat > dist/deploy-info.json <<EOF
+          {
+            "source_branch": "${GITHUB_REF_NAME}",
+            "source_commit": "${GITHUB_SHA}",
+            "build_time_utc": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+      - name: Publish dist to deployment branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          DEPLOY_DIR="$(mktemp -d)"
+          REMOTE_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          if git ls-remote --exit-code --heads "$REMOTE_URL" "$TARGET_BRANCH" >/dev/null 2>&1; then
+            git clone --depth 1 --branch "$TARGET_BRANCH" "$REMOTE_URL" "$DEPLOY_DIR"
+          else
+            git init -b "$TARGET_BRANCH" "$DEPLOY_DIR"
+            git -C "$DEPLOY_DIR" remote add origin "$REMOTE_URL"
+          fi
+
+          find "$DEPLOY_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -a dist/. "$DEPLOY_DIR"/
+
+          cd "$DEPLOY_DIR"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No deploy changes for $TARGET_BRANCH"
+            exit 0
+          fi
+
+          git commit -m "chore: auto deploy from ${GITHUB_REF_NAME} (${GITHUB_SHA})"
+          git push origin "$TARGET_BRANCH"
