@@ -164,12 +164,12 @@ function ClassPayment() {
 
         {status === 'pending' && (
           <>
-            <p className="text-sm text-slate-600 mb-6">You will be redirected to Worldline to choose a payment method and complete the transaction.</p>
+                        <p className="text-sm text-slate-600 mb-6">You will be redirected to a secure payment page to choose a payment method and complete the transaction.</p>
             <button
               onClick={handlePay}
               className="w-full bg-blue-900 text-white text-sm font-medium py-3 rounded-lg hover:bg-blue-800"
             >
-              Continue to Worldline
+              Continue
             </button>
           </>
         )}

@@ -1,6 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import SignatureCanvas from 'react-signature-canvas'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
@@ -8,7 +7,6 @@ import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 function ClassDeclaration() {
   const navigate = useNavigate()
   const { classId } = useParams()
-  const sigRef = useRef(null)
 
   const [confirmChecked, setConfirmChecked] = useState(false)
   const [termsChecked, setTermsChecked] = useState(false)
@@ -16,12 +14,10 @@ function ClassDeclaration() {
   const [showModal, setShowModal] = useState(false)
   const [error, setError] = useState('')
 
-  const [signatureMode, setSignatureMode] = useState('draw') // 'draw' or 'upload'
+  const [signatureMode, setSignatureMode] = useState('type') // 'type' or 'upload'
+  const [typedName, setTypedName] = useState('')
+  const [signatureConfirmed, setSignatureConfirmed] = useState(false)
   const [uploadedSignature, setUploadedSignature] = useState(null)
-
-  const clearSignature = () => {
-    sigRef.current?.clear()
-  }
 
   const handleSignatureFileChange = (e) => {
     const file = e.target.files[0]
@@ -44,8 +40,8 @@ function ClassDeclaration() {
       return
     }
 
-    if (signatureMode === 'draw' && sigRef.current?.isEmpty()) {
-      setError('Please draw your digital signature before submitting.')
+    if (signatureMode === 'type' && (!typedName.trim() || !signatureConfirmed)) {
+      setError('Please type your name and confirm it as your digital signature.')
       return
     }
     if (signatureMode === 'upload' && !uploadedSignature) {
@@ -111,17 +107,17 @@ function ClassDeclaration() {
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">Digital Signature</label>
 
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-3">
               <button
                 type="button"
-                onClick={() => setSignatureMode('draw')}
+                onClick={() => setSignatureMode('type')}
                 className={`text-xs font-medium px-4 py-1.5 rounded-full border-2 transition ${
-                  signatureMode === 'draw'
+                  signatureMode === 'type'
                     ? 'border-blue-900 bg-blue-50 text-blue-900'
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
-                ✏️ Draw Signature
+                ✍️ Type Signature
               </button>
               <button
                 type="button"
@@ -136,23 +132,28 @@ function ClassDeclaration() {
               </button>
             </div>
 
-            {signatureMode === 'draw' ? (
-              <>
-                <div className="border border-slate-300 rounded-lg overflow-hidden bg-slate-50">
-                  <SignatureCanvas
-                    ref={sigRef}
-                    penColor="#1e3a8a"
-                    canvasProps={{ className: 'w-full h-40' }}
+            {signatureMode === 'type' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Full Name (as signature)</label>
+                  <input
+                    type="text"
+                    value={typedName}
+                    onChange={(e) => setTypedName(e.target.value)}
+                    placeholder="Type your full name"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={clearSignature}
-                  className="text-xs text-blue-700 font-medium hover:underline mt-2"
-                >
-                  Clear Signature
-                </button>
-              </>
+                <label className="flex items-start gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 mt-0.5"
+                    checked={signatureConfirmed}
+                    onChange={(e) => setSignatureConfirmed(e.target.checked)}
+                  />
+                  I agree that typing my name above serves as my digital signature and confirms this declaration.
+                </label>
+              </div>
             ) : (
               <div>
                 {!uploadedSignature ? (

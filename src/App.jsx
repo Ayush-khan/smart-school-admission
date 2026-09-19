@@ -52,7 +52,7 @@ function App() {
       <Route path="/class/:classId/application/receipt" element={<ClassReceipt />} />
       <Route path="/class/:classId/status" element={<ClassStatus />} />
       <Route path="/class/:classId/application/confirmation" element={<ClassConfirmation />} />
-          </Routes>
+      </Routes>
     </>
   )
 }

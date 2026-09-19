@@ -104,3 +104,29 @@ export async function deleteOnlineForm(formId) {
   const response = await apiClient.delete(`/api/admission/form/${formId}`)
   return response.data
 }
+
+// ---------------------------------------------------------------------------
+// Download Admission Form PDF — GET /api/admission/online-form/{formId}/download
+// ---------------------------------------------------------------------------
+export async function downloadOnlineFormPdf(formId, narId) {
+  const response = await apiClient.get(`/api/admission/online-form/${formId}/download`, {
+    params: { nar_id: narId },
+    responseType: 'blob',
+  })
+
+  const contentType = response.headers['content-type'] || ''
+  if (!contentType.includes('application/pdf')) {
+    // Backend didn't return a real PDF — most likely a JSON error response.
+    const text = await response.data.text()
+    let message = 'Could not download the form.'
+    try {
+      const parsed = JSON.parse(text)
+      message = parsed.message || message
+    } catch {
+      // Not JSON either — keep the default message.
+    }
+    throw new Error(message)
+  }
+
+  return response.data
+}

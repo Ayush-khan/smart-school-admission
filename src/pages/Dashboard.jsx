@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import InquiryModal from '../components/InquiryModal'
 import logo from '../assets/evolvu-logo.webp'
-import { getClasses, getDashboard } from '../services/applicationService'
+import { getClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
-import { clearFormId } from '../utils/formId'
+import { clearFormId, saveFormId } from '../utils/formId'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -22,8 +22,13 @@ function Dashboard() {
   // ASSUMPTION: the dashboard response shape isn't specified beyond "dashboard
   // data/status" — adjust the field names below (totalFormsRegistered / amountPaid)
   // once you can see the real payload.
-  const [summary, setSummary] = useState({ totalFormsRegistered: 0, amountPaid: 0 })
+   const [summary, setSummary] = useState({ totalFormsRegistered: 0, amountPaid: 0 })
   const [loadingSummary, setLoadingSummary] = useState(true)
+
+  // ASSUMPTION: field names in each form row aren't documented yet — adjust
+  // the mapping in the table below once you see the real payload.
+  const [forms, setForms] = useState([])
+  const [loadingForms, setLoadingForms] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -60,8 +65,22 @@ function Dashboard() {
       }
     }
 
+        async function loadForms() {
+      try {
+        if (!narId) return
+        const result = await listOnlineForms({ nar_id: narId })
+        const list = result.data ?? result
+        if (!cancelled) setForms(Array.isArray(list) ? list : [])
+      } catch (err) {
+        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load your applications.'))
+      } finally {
+        if (!cancelled) setLoadingForms(false)
+      }
+    }
+
     loadClasses()
     loadSummary()
+    loadForms()
     return () => {
       cancelled = true
     }
@@ -86,9 +105,47 @@ function Dashboard() {
     })
   }
 
-  const handleLogout = () => {
+    const handleLogout = () => {
     clearSession()
     navigate('/login')
+  }
+
+        const handleEditForm = (form) => {
+    saveFormId(form.class_id, form.form_id)
+    navigate(`/class/${form.class_id}/application/review`)
+  }
+
+    const handlePayForm = (form) => {
+    saveFormId(form.class_id, form.form_id)
+    navigate(`/class/${form.class_id}/application/payment`)
+  }
+
+  const handleDownloadForm = async (form) => {
+    try {
+      const blob = await downloadOnlineFormPdf(form.form_id, narId)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${form.form_id}.pdf`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not download the form.'))
+    }
+  }
+
+  const getClassLabel = (classId) => {
+    const match = classes.find((c) => String(c.id ?? c.class_id) === String(classId))
+    return match?.label ?? match?.class_name ?? match?.name ?? classId
+  }
+
+   const getFullName = (form) => {
+    return [form.first_name, form.mid_name, form.last_name].filter(Boolean).join(' ')
+  }
+
+  const isPaid = (form) => {
+    const status = (form.payment_status ?? '').toString().toLowerCase()
+    return status === 'success'
   }
 
   return (
@@ -165,12 +222,73 @@ function Dashboard() {
           </div>
         </div>
 
+        <div className="bg-white rounded-xl shadow-md mt-8 overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-400 text-white">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Form No</th>
+                <th className="px-4 py-3 font-semibold">Full Name</th>
+                <th className="px-4 py-3 font-semibold">Class</th>
+                <th className="px-4 py-3 font-semibold">Application Status</th>
+                <th className="px-4 py-3 font-semibold">Interview Date</th>
+                <th className="px-4 py-3 font-semibold">Payment Status</th>
+                <th className="px-4 py-3 font-semibold">Payment</th>
+                <th className="px-4 py-3 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingForms ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                    Loading applications...
+                  </td>
+                </tr>
+              ) : forms.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                    No admission forms yet.
+                  </td>
+                </tr>
+              ) : (
+                  forms.map((form) => (
+                  <tr key={form.form_id} className="border-t border-slate-100">
+                    <td className="px-4 py-3">{form.form_id}</td>
+                    <td className="px-4 py-3">{getFullName(form)}</td>
+                    <td className="px-4 py-3">{getClassLabel(form.class_id)}</td>
+                    <td className="px-4 py-3">{form.admission_form_status}</td>
+                    <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
+                    <td className="px-4 py-3">{form.payment_status ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      {!isPaid(form) && (
+                        <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
+                          💳
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isPaid(form) ? (
+                        <button onClick={() => handleDownloadForm(form)} className="text-slate-600 hover:text-slate-800" title="Download">
+                          ⬇️
+                        </button>
+                      ) : (
+                        <button onClick={() => handleEditForm(form)} className="text-blue-600 hover:text-blue-800" title="Edit">
+                          ✏️
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
         <div className="fixed bottom-6 right-6">
           <button
             onClick={() => setShowInquiry(true)}
             className="bg-teal-600 text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg hover:bg-teal-700 flex items-center gap-2"
           >
-            💬 Have a Question?
+            💬 Admission Inquiry
           </button>
         </div>
       </main>
