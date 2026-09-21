@@ -127,7 +127,7 @@ function VerifyOtp() {
 
           <div className="text-left mb-4">
             <label className="block text-sm font-medium text-white mb-1">Enter OTP</label>
-            <input
+             <input
               type="text"
               inputMode="numeric"
               maxLength={5}
@@ -135,6 +135,9 @@ function VerifyOtp() {
               onChange={(e) => {
                 setOtp(e.target.value.replace(/\D/g, ''))
                 setError('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !verifying) handleVerify()
               }}
               className="w-full bg-white/70 border-none rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
               placeholder="Enter the 5-digit OTP"

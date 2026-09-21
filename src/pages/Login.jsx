@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import logo from '../assets/evolvu-logo.webp'
-import { createRegistration, sendOtp } from '../services/authService'
+import { createRegistration, resendOtp } from '../services/authService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { saveSessionInfo } from '../utils/session'
 
@@ -36,34 +36,54 @@ function Login() {
   }
 
   // Step 2 + Step 3 of the Frontend Flow: register, then send the OTP.
-  const submitRegistration = async () => {
-    if (!validate()) return
+    // Shared lookup step: register (or find the existing account) and get narId.
+  const lookupNarId = async () => {
+    const result = await createRegistration({ fullName, mode, contact })
+    if (result.success === false) {
+      setError(result.message || 'Registration failed. Please try again.')
+      return null
+    }
+    const narId = result.data?.nar_id ?? result.data?.narId ?? result.nar_id ?? result.narId
+    if (!narId) {
+      setError('Registration succeeded, but the admission ID was not returned. Please contact the school.')
+      return null
+    }
+    saveSessionInfo({ narId, mode, contact, fullName })
+    return narId
+  }
 
+  // "Use OTP / Password" — for logging in with an OTP the user already has.
+  // Does NOT trigger a new OTP send.
+  const submitLogin = async () => {
+    if (!validate()) return
     setLoading(true)
     setError('')
     try {
-      const result = await createRegistration({ fullName, mode, contact })
-      if (result.success === false) {
-        setError(result.message || 'Registration failed. Please try again.')
-        return
-      }
+      const narId = await lookupNarId()
+      if (!narId) return
+      navigate('/verify-otp', { state: { contact, mode, narId } })
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed. Please try again.'))
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      const narId = result.data?.nar_id ?? result.data?.narId ?? result.nar_id ?? result.narId
-      if (!narId) {
-        setError('Registration succeeded, but the admission ID was not returned. Please contact the school.')
-        return
-      }
-      saveSessionInfo({ narId, mode, contact, fullName })
-
-      // Registration succeeded — now trigger the OTP send.
-      try {
-        await sendOtp({ narId, mode, contact })
+  // "Resend OTP" — explicitly requests a brand-new OTP.
+  const submitResendOtp = async () => {
+    if (!validate()) return
+    setLoading(true)
+    setError('')
+    try {
+      const narId = await lookupNarId()
+      if (!narId) return
+            try {
+        await resendOtp({ narId, mode, contact })
       } catch (otpErr) {
         setError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
         return
       }
-
-      toast.success(mode === 'mobile' ? 'OTP sent to your mobile number' : 'OTP sent to your email')
+      toast.success(mode === 'mobile' ? 'New OTP sent to your mobile number' : 'New OTP sent to your email')
       navigate('/verify-otp', { state: { contact, mode, narId } })
     } catch (err) {
       setError(getErrorMessage(err, 'Registration failed. Please try again.'))
@@ -74,11 +94,11 @@ function Login() {
 
   const handleContinue = (e) => {
     e.preventDefault()
-    submitRegistration()
+    submitLogin()
   }
 
   const handleResend = () => {
-    submitRegistration()
+    submitResendOtp()
   }
 
   return (
