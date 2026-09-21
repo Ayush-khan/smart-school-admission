@@ -5,6 +5,7 @@ import { getErrorMessage } from '../services/apiHelpers'
 
 function InquiryModal({ onClose }) {
   const [firstName, setFirstName] = useState('')
+  const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
   const [dob, setDob] = useState('')
   const [gender, setGender] = useState('')
@@ -17,6 +18,9 @@ function InquiryModal({ onClose }) {
   const [email, setEmail] = useState('')
   const [documentsAvailable, setDocumentsAvailable] = useState(false)
   const [currentSchool, setCurrentSchool] = useState('')
+  const [address, setAddress] = useState('')
+  const [pincode, setPincode] = useState('')
+  const [siblingInSchool, setSiblingInSchool] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -74,8 +78,9 @@ function InquiryModal({ onClose }) {
     setError('')
     setSubmitting(true)
     try {
-      await submitInquiry({
+        await submitInquiry({
         first_name: firstName.trim(),
+        middle_name: middleName.trim(),
         last_name: lastName.trim(),
         dob,
         gender,
@@ -84,6 +89,9 @@ function InquiryModal({ onClose }) {
         mother_name: motherName.trim(),
         contact_no: contact.trim(),
         email: email.trim(),
+        address: address.trim(),
+        pincode: pincode.trim(),
+        sibling_in_school: siblingInSchool,
         documents_available: documentsAvailable,
         current_school: currentSchool.trim(),
         message: message.trim(),
@@ -111,11 +119,15 @@ function InquiryModal({ onClose }) {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-                    <p className={labelClass}>Student Name <span className="text-red-500">*</span></p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <p className={labelClass}>Student Name <span className="text-red-500">*</span></p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>First Name</label>
               <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelClass}>Middle Name</label>
+              <input className={inputClass} value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
             </div>
             <div>
               <label className={labelClass}>Last Name</label>
@@ -177,10 +189,29 @@ function InquiryModal({ onClose }) {
             <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
 
-          <div>
+                    <div>
             <label className={labelClass}>Current School</label>
             <input className={inputClass} value={currentSchool} onChange={(e) => setCurrentSchool(e.target.value)} />
           </div>
+
+          <div>
+            <label className={labelClass}>Address</label>
+            <input className={inputClass} value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+
+          <div>
+            <label className={labelClass}>Pincode</label>
+            <input className={inputClass} value={pincode} onChange={(e) => setPincode(e.target.value)} />
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={siblingInSchool}
+              onChange={(e) => setSiblingInSchool(e.target.checked)}
+            />
+            Sibling currently studying at this school?
+          </label>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
@@ -188,7 +219,7 @@ function InquiryModal({ onClose }) {
               checked={documentsAvailable}
               onChange={(e) => setDocumentsAvailable(e.target.checked)}
             />
-             All documents available
+            Are all documents available?
           </label>
 
           <div>
