@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Controller } from 'react-hook-form'
-// This is the code
+
 function CustomSelect({ control, name, rules, options, placeholder = 'SELECT' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
