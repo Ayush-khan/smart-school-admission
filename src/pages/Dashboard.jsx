@@ -52,10 +52,10 @@ function Dashboard() {
         }
         const result = await getDashboard(narId)
         const data = result.data ?? result
-        if (!cancelled && data) {
+               if (!cancelled && data) {
           setSummary({
-            totalFormsRegistered: data.totalFormsRegistered ?? data.total_forms_registered ?? 0,
-            amountPaid: data.amountPaid ?? data.amount_paid ?? 0,
+            totalFormsRegistered: data.forms_count ?? 0,
+            amountPaid: data.amount_paid ?? 0,
           })
         }
       } catch (err) {
