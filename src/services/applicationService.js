@@ -130,3 +130,38 @@ export async function downloadOnlineFormPdf(formId, narId) {
 
   return response.data
 }
+
+// ---------------------------------------------------------------------------
+// Create Admission Enquiry — POST /api/admission/enquiries
+// ASSUMPTION: field names below match this project's existing snake_case
+// convention but are NOT confirmed by backend — verify against the real
+// AdmissionEnquiryController validation rules before trusting this.
+// ---------------------------------------------------------------------------
+export async function submitInquiry(payload) {
+  const response = await apiClient.post('/api/admission/enquiries', payload)
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
+// Get Admission Document Types — GET /api/admission/document-types
+// ---------------------------------------------------------------------------
+export async function getDocumentTypes() {
+  const response = await apiClient.get('/api/admission/document-types')
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
+// Get Classes for Enquiry Dropdown — GET /api/admission/enquiry/classes
+// ---------------------------------------------------------------------------
+export async function getEnquiryClasses() {
+  const response = await apiClient.get('/api/admission/enquiry/classes')
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
+// Get Genders for Enquiry Dropdown — GET /api/admission/enquiry/genders
+// ---------------------------------------------------------------------------
+export async function getEnquiryGenders() {
+  const response = await apiClient.get('/api/admission/enquiry/genders')
+  return response.data
+}

@@ -1,20 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-
-const documentList = [
-  { key: 'birthCertificate', name: 'Birth Certificate', required: true },
-  { key: 'studentPhoto', name: 'Student Photograph', required: true },
-  { key: 'familyPhoto', name: 'Family Photograph', required: false },
-  { key: 'aadhaarCard', name: 'Aadhaar Card', required: false },
-  { key: 'casteCertificate', name: 'Caste Certificate', required: false },
-  { key: 'previousAcademic', name: 'Previous Academic Records', required: false },
-  { key: 'transferCertificate', name: 'Transfer Certificate', required: false },
-  { key: 'otherDocuments', name: 'Other Documents', required: false },
-]
+import { getDocumentTypes } from '../services/applicationService'
+import { getErrorMessage } from '../services/apiHelpers'
 
 const MAX_FILE_SIZE_KB = 220
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024
@@ -26,7 +17,7 @@ function formatSize(bytes) {
 }
 
 function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
-  const inputId = `file-${doc.key}`
+  const inputId = `file-${doc.code}`
 
   const handleChange = (e) => {
     const selected = e.target.files[0]
@@ -41,7 +32,7 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
       alert(`File size must be under ${MAX_FILE_SIZE_KB} KB. Please compress your file and try again.`)
       return
     }
-    onUpload(doc.key, selected)
+    onUpload(doc.code, selected)
   }
 
   return (
@@ -84,7 +75,7 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
             </label>
             <button
               type="button"
-              onClick={() => onRemove(doc.key)}
+              onClick={() => onRemove(doc.code)}
               className="text-xs text-red-600 font-medium hover:underline"
             >
               Remove
@@ -101,21 +92,51 @@ function ClassDocuments() {
   const { classId } = useParams()
   const [files, setFiles] = useState({})
 
-  const handleUpload = (key, file) => {
-    setFiles((prev) => ({ ...prev, [key]: file }))
+  const [documentList, setDocumentList] = useState([])
+  const [loadingDocTypes, setLoadingDocTypes] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadDocumentTypes() {
+      try {
+        const result = await getDocumentTypes()
+        const list = result?.data?.document_types ?? []
+        // ASSUMPTION: only `code` and `name` are confirmed from backend.
+        // `required` isn't documented — defaulting to false until confirmed;
+        // adjust the mapping below once the real field name (if any) is known.
+        const mapped = list.map((d) => ({
+          code: d.code,
+          name: d.name,
+          required: d.required ?? d.is_required ?? false,
+        }))
+        if (!cancelled) setDocumentList(mapped)
+      } catch (err) {
+        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load document types.'))
+      } finally {
+        if (!cancelled) setLoadingDocTypes(false)
+      }
+    }
+    loadDocumentTypes()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleUpload = (code, file) => {
+    setFiles((prev) => ({ ...prev, [code]: file }))
     toast.success(`${file.name} uploaded`)
   }
 
-  const handleRemove = (key) => {
+  const handleRemove = (code) => {
     setFiles((prev) => {
       const updated = { ...prev }
-      delete updated[key]
+      delete updated[code]
       return updated
     })
   }
 
   const requiredDocs = documentList.filter((d) => d.required)
-  const missingRequired = requiredDocs.filter((d) => !files[d.key])
+  const missingRequired = requiredDocs.filter((d) => !files[d.code])
 
   const handleContinue = () => {
     if (missingRequired.length > 0) {
@@ -123,7 +144,7 @@ function ClassDocuments() {
       return
     }
     const fileMeta = Object.fromEntries(
-      Object.entries(files).map(([key, file]) => [key, { name: file.name, size: file.size }])
+      Object.entries(files).map(([code, file]) => [code, { name: file.name, size: file.size }])
     )
     saveApplicationSection(classId, 'documents', fileMeta)
     toast.success('Documents uploaded successfully')
@@ -141,17 +162,23 @@ function ClassDocuments() {
             Upload clear scanned copies or photos of the following documents.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {documentList.map((doc) => (
-              <DocumentUploadCard
-                key={doc.key}
-                doc={doc}
-                file={files[doc.key]}
-                onUpload={handleUpload}
-                onRemove={handleRemove}
-              />
-            ))}
-          </div>
+          {loadingDocTypes ? (
+            <p className="text-sm text-slate-500 text-center py-6">Loading document types...</p>
+          ) : documentList.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-6">No document types configured.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {documentList.map((doc) => (
+                <DocumentUploadCard
+                  key={doc.code}
+                  doc={doc}
+                  file={files[doc.code]}
+                  onUpload={handleUpload}
+                  onRemove={handleRemove}
+                />
+              ))}
+            </div>
+          )}
 
                    <p className="text-xs text-slate-500 mt-6 text-left">
             Please ensure that your image/PDF file is less than {MAX_FILE_SIZE_KB}kb.{' '}
