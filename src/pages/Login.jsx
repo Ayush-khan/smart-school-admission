@@ -10,7 +10,8 @@ function Login() {
   const [mode, setMode] = useState('mobile') // 'mobile' or 'email'
   const [fullName, setFullName] = useState('')
   const [contact, setContact] = useState('')
-  const [error, setError] = useState('')
+  const [contactError, setContactError] = useState('')
+  const [fullNameError, setFullNameError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const [today, setToday] = useState('')
@@ -19,33 +20,49 @@ function Login() {
     setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
   }, [])
 
-  const validate = () => {
-    if (!fullName.trim()) {
-      setError('Full name is required')
-      return false
+      const validate = () => {
+    let valid = true
+
+    if (!contact.trim()) {
+      setContactError(mode === 'mobile' ? 'Mobile number is required' : 'Email is required')
+      valid = false
+    } else if (mode === 'mobile' && !/^\d{10}$/.test(contact)) {
+      setContactError('Enter a valid 10-digit mobile number')
+      valid = false
+    } else if (mode === 'email' && !/^\S+@\S+\.\S+$/.test(contact)) {
+      setContactError('Enter a valid email address')
+      valid = false
+    } else {
+      setContactError('')
     }
-    if (mode === 'mobile' && !/^\d{10}$/.test(contact)) {
-      setError('Enter a valid 10-digit mobile number')
-      return false
+
+       if (!fullName.trim()) {
+      setFullNameError('Full name is required')
+      valid = false
+    } else if (fullName.trim().length > 100) {
+      setFullNameError('Full name must be under 100 characters')
+      valid = false
+    } else if (!/^[A-Za-z\s.'-]+$/.test(fullName.trim())) {
+      setFullNameError('Enter a valid name')
+      valid = false
+    } else {
+      setFullNameError('')
     }
-    if (mode === 'email' && !/^\S+@\S+\.\S+$/.test(contact)) {
-      setError('Enter a valid email address')
-      return false
-    }
-    return true
+
+    return valid
   }
 
   // Step 2 + Step 3 of the Frontend Flow: register, then send the OTP.
     // Shared lookup step: register (or find the existing account) and get narId.
-  const lookupNarId = async () => {
+    const lookupNarId = async () => {
     const result = await createRegistration({ fullName, mode, contact })
     if (result.success === false) {
-      setError(result.message || 'Registration failed. Please try again.')
+      setContactError(result.message || 'Registration failed. Please try again.')
       return null
     }
     const narId = result.data?.nar_id ?? result.data?.narId ?? result.nar_id ?? result.narId
     if (!narId) {
-      setError('Registration succeeded, but the admission ID was not returned. Please contact the school.')
+      setContactError('Registration succeeded, but the admission ID was not returned. Please contact the school.')
       return null
     }
     saveSessionInfo({ narId, mode, contact, fullName })
@@ -54,39 +71,40 @@ function Login() {
 
   // "Use OTP / Password" — for logging in with an OTP the user already has.
   // Does NOT trigger a new OTP send.
-  const submitLogin = async () => {
+    const submitLogin = async () => {
     if (!validate()) return
     setLoading(true)
-    setError('')
+    setContactError('')
+    setFullNameError('')
     try {
       const narId = await lookupNarId()
       if (!narId) return
       navigate('/verify-otp', { state: { contact, mode, narId } })
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'))
+      setContactError(getErrorMessage(err, 'Registration failed. Please try again.'))
     } finally {
       setLoading(false)
     }
   }
-
   // "Resend OTP" — explicitly requests a brand-new OTP.
-  const submitResendOtp = async () => {
+    const submitResendOtp = async () => {
     if (!validate()) return
     setLoading(true)
-    setError('')
+    setContactError('')
+    setFullNameError('')
     try {
       const narId = await lookupNarId()
       if (!narId) return
             try {
         await resendOtp({ narId, mode, contact })
       } catch (otpErr) {
-        setError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
+        setContactError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
         return
       }
       toast.success(mode === 'mobile' ? 'New OTP sent to your mobile number' : 'New OTP sent to your email')
-      navigate('/verify-otp', { state: { contact, mode, narId } })
+      navigate('/verify-otp', { state: { contact, mode, narId, justResent: true } })
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed. Please try again.'))
+      setContactError(getErrorMessage(err, 'Registration failed. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -132,7 +150,11 @@ function Login() {
             <div className="flex rounded-full bg-white/40 p-1 mb-6">
               <button
                 type="button"
-                onClick={() => setMode('mobile')}
+                onClick={() => {
+                  setMode('mobile')
+                  setContactError('')
+                  setFullNameError('')
+                }}
                 className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition ${
                   mode === 'mobile' ? 'bg-orange-400 text-slate-900 shadow' : 'text-slate-700'
                 }`}
@@ -141,7 +163,11 @@ function Login() {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('email')}
+                onClick={() => {
+                  setMode('email')
+                  setContactError('')
+                  setFullNameError('')
+                }}
                 className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition ${
                   mode === 'email' ? 'bg-orange-400 text-slate-900 shadow' : 'text-slate-700'
                 }`}
@@ -149,7 +175,6 @@ function Login() {
                 Email Login
               </button>
             </div>
-
             <form onSubmit={handleContinue} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
@@ -162,20 +187,21 @@ function Login() {
                   className="w-full bg-white/70 border-none rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   placeholder={mode === 'mobile' ? '10-digit mobile number' : 'you@example.com'}
                 />
+                {contactError && <p className="text-sm text-red-200 font-medium mt-1">{contactError}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-white mb-1">Full Name</label>
-                <input
+                              <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  maxLength={100}
                   className="w-full bg-white/70 border-none rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   placeholder="Enter your full name"
                 />
+                {fullNameError && <p className="text-sm text-red-200 font-medium mt-1">{fullNameError}</p>}
               </div>
-
-              {error && <p className="text-sm text-red-200 font-medium">{error}</p>}
 
               <button
                 type="submit"
@@ -200,9 +226,9 @@ function Login() {
           <div className="lg:w-80 bg-white/85 backdrop-blur-md rounded-2xl shadow-xl p-8 self-start">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Instructions</h2>
             <ul className="list-disc list-outside pl-5 space-y-4 text-sm text-slate-700">
-              <li>The OTP you receive during your first login will become your permanent password.</li>
+              <li>The OTP you receive during your first login will become your password.</li>
               <li>Please keep this OTP safe for future logins.</li>
-              <li>Every time you log in, you must use this first OTP as your password.</li>
+              <li>Every time you log in, you can use this first OTP as your password.</li>
               <li>If you forget your password, you can click "Resend OTP" to receive a new OTP.</li>
             </ul>
           </div>

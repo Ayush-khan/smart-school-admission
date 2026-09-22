@@ -165,3 +165,14 @@ export async function getEnquiryGenders() {
   const response = await apiClient.get('/api/admission/enquiry/genders')
   return response.data
 }
+
+// ---------------------------------------------------------------------------
+// List Admission Enquiries — GET /api/admission/enquiries
+// ASSUMPTION: documented as an admin-wide listing — passing nar_id/contact as
+// filters is UNCONFIRMED. Verify via Network tab that this actually restricts
+// results to the logged-in user before trusting it anywhere user-facing.
+// ---------------------------------------------------------------------------
+export async function listAdmissionEnquiries(params = {}) {
+  const response = await apiClient.get('/api/admission/enquiries', { params })
+  return response.data
+}

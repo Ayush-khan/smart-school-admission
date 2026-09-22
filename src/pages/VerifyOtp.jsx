@@ -23,6 +23,7 @@ function VerifyOtp() {
   const [today, setToday] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)
+  const [justResent, setJustResent] = useState(location.state?.justResent ?? false)
 
   useEffect(() => {
     setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
@@ -81,6 +82,7 @@ function VerifyOtp() {
       saveSessionInfo({ narId, mode, contact })
       setTimer(30)
       setOtp('')
+      setJustResent(true)
       toast.success('OTP resent')
     } catch (err) {
       setError(getErrorMessage(err, 'Could not resend OTP. Please try again.'))
@@ -115,7 +117,9 @@ function VerifyOtp() {
         <div className="max-w-md w-full space-y-4">
         <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-xl p-6 text-center">
           <p className="text-blue-700 font-semibold text-lg leading-snug">
-            We already sent OTP earlier. Please use the same OTP as password.
+            {justResent
+              ? `A new OTP has been sent to your ${mode === 'mobile' ? 'mobile number' : 'email'}.`
+              : 'We already sent OTP earlier. Please use the same OTP as password.'}
           </p>
           <p className="text-slate-800 text-sm mt-3">
             {mode === 'mobile' ? 'OTP sent to mobile' : 'Email sent to'}: <span className="font-medium">{contact || '—'}</span>

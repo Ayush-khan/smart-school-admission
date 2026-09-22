@@ -109,7 +109,7 @@ function InquiryModal({ onClose }) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-8 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full my-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Admission Inquiry</h2>
+          <h2 className="text-lg font-semibold text-slate-800">Admission Enquiry</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">
             ✕
           </button>
@@ -235,12 +235,12 @@ function InquiryModal({ onClose }) {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button
+          <button
             type="submit"
             disabled={submitting}
             className="w-full bg-blue-900 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-blue-800 disabled:opacity-60"
           >
-            {submitting ? 'Submitting...' : 'Submit Inquiry'}
+            {submitting ? 'Submitting...' : 'Submit Enquiry'}
           </button>
         </form>
       </div>
