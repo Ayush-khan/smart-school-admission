@@ -17,7 +17,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      # develop pushes to deploycommon, main pushes to deploy this
+      # develop pushes to deploycommon, main pushes to deploy
       BUILD_COMMAND: "npm run build"
       TARGET_BRANCH: ${{ github.ref == 'refs/heads/develop' && 'deploycommon' || 'deploy' }}
 
