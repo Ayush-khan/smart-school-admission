@@ -210,7 +210,7 @@ function EnquiryModal({ onClose }) {
               checked={siblingInSchool}
               onChange={(e) => setSiblingInSchool(e.target.checked)}
             />
-            Sibling currently studying at this school?
+            Sibling is currently studying at this school
           </label>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -219,17 +219,17 @@ function EnquiryModal({ onClose }) {
               checked={documentsAvailable}
               onChange={(e) => setDocumentsAvailable(e.target.checked)}
             />
-            Are all documents available?
+            All documents are available
           </label>
 
           <div>
-            <label className={labelClass}>Your Question</label>
+            <label className={labelClass}>Describe your query (Optional)</label>
             <textarea
               rows={3}
               className={inputClass}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your question here..."
+              placeholder="Type your query here..."
             />
           </div>
 
