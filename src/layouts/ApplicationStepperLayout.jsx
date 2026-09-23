@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { getFormId } from '../utils/formId'
+import { getApplicationData } from '../utils/applicationData'
 
 const steps = [
   'Student Details',
@@ -13,9 +14,25 @@ const steps = [
   'Declaration',
 ]
 
+// Maps each step number to whether its data has actually been saved,
+// so the stepper reflects real saved progress instead of just the
+// page the user currently happens to be on.
+function getSavedSteps(data) {
+  return {
+    1: Boolean(data.student && Object.keys(data.student).length > 0),
+    2: Boolean(data.address && Object.keys(data.address).length > 0),
+    3: Boolean(data.parents && Object.keys(data.parents).length > 0),
+    4: data.siblings !== undefined && data.siblings !== null,
+    5: Array.isArray(data.academic) && data.academic.length > 0,
+    6: Boolean(data.additional && Object.keys(data.additional).length > 0),
+    7: Boolean(data.documents && Object.keys(data.documents).length > 0),
+  }
+}
+
 function ApplicationStepperLayout({ currentStep, children }) {
   const { classId } = useParams()
   const formId = getFormId(classId)
+  const savedSteps = getSavedSteps(getApplicationData(classId))
 
   return (
     <div>
@@ -30,7 +47,11 @@ function ApplicationStepperLayout({ currentStep, children }) {
           {steps.map((step, index) => {
             const stepNumber = index + 1
             const isActive = stepNumber === currentStep
-            const isDone = stepNumber < currentStep
+            // Review (8) and Declaration (9) have no data of their own —
+            // fall back to position for those, otherwise use real saved state.
+            const isDone = stepNumber in savedSteps
+              ? savedSteps[stepNumber] && stepNumber !== currentStep
+              : stepNumber < currentStep
             return (
               <div key={step} className="flex items-center gap-2">
                 <div
