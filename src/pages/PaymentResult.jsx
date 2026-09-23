@@ -63,7 +63,7 @@ function PaymentResult() {
             <h2 className="text-xl font-semibold text-slate-800 mb-2">Payment Successful</h2>
             <p className="text-sm text-slate-500 mb-2">Your admission fee has been received.</p>
             <p className="text-xs text-slate-400 mb-6">Transaction reference: {payment?.transaction_reference || '—'}</p>
-            <button onClick={goToReceipt} className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800">
+            <button onClick={goToReceipt} className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light">
               View Receipt
             </button>
           </div>
@@ -74,7 +74,7 @@ function PaymentResult() {
             <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">!</div>
             <h2 className="text-xl font-semibold text-slate-800 mb-2">Payment Pending</h2>
             <p className="text-sm text-slate-500 mb-6">Your payment is still being processed.</p>
-            <button onClick={goToPayment} className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800">
+            <button onClick={goToPayment} className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light">
               Check Payment Status
             </button>
           </div>
@@ -85,7 +85,7 @@ function PaymentResult() {
             <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">✕</div>
             <h2 className="text-xl font-semibold text-slate-800 mb-2">Payment Failed</h2>
             <p className="text-sm text-slate-500 mb-6">We could not verify this payment. Please try again.</p>
-            <button onClick={goToPayment} className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800">
+            <button onClick={goToPayment} className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light">
               Try Again
             </button>
           </div>

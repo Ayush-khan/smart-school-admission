@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
+import { saveAdmissionSignature } from '../services/applicationService'
+import { getErrorMessage } from '../services/apiHelpers'
+import { getFormId } from '../utils/formId'
 
 function ClassDeclaration() {
   const navigate = useNavigate()
@@ -13,6 +16,7 @@ function ClassDeclaration() {
   const [privacyChecked, setPrivacyChecked] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const [signatureMode, setSignatureMode] = useState('type') // 'type' or 'upload'
   const [typedName, setTypedName] = useState('')
@@ -53,10 +57,31 @@ function ClassDeclaration() {
     setShowModal(true)
   }
 
-  const confirmSubmit = () => {
+    const confirmSubmit = async () => {
     setShowModal(false)
-    toast.success('Application submitted successfully')
-    navigate(`/class/${classId}/application/payment`)
+    setSubmitting(true)
+    try {
+      const formId = getFormId(classId)
+      if (!formId) {
+        toast.error('Could not find your application. Please go back and try again.')
+        return
+      }
+      await saveAdmissionSignature({
+        formId,
+        signatureType: signatureMode === 'type' ? 'typed' : 'pdf',
+        signatureName: typedName.trim(),
+        signatureFile: uploadedSignature,
+        declarationConfirmed: confirmChecked,
+        termsAccepted: termsChecked,
+        privacyAccepted: privacyChecked,
+      })
+      toast.success('Application submitted successfully')
+      navigate(`/class/${classId}/application/payment`)
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not save your signature. Please try again.'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -113,7 +138,7 @@ function ClassDeclaration() {
                 onClick={() => setSignatureMode('type')}
                 className={`text-xs font-medium px-4 py-1.5 rounded-full border-2 transition ${
                   signatureMode === 'type'
-                    ? 'border-blue-900 bg-blue-50 text-blue-900'
+                    ? 'border-blue-900 bg-blue-50 text-navy'
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
@@ -124,7 +149,7 @@ function ClassDeclaration() {
                 onClick={() => setSignatureMode('upload')}
                 className={`text-xs font-medium px-4 py-1.5 rounded-full border-2 transition ${
                   signatureMode === 'upload'
-                    ? 'border-blue-900 bg-blue-50 text-blue-900'
+                    ? 'border-blue-900 bg-blue-50 text-navy'
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
@@ -202,7 +227,7 @@ function ClassDeclaration() {
             <button
               type="button"
               onClick={handleSubmitClick}
-              className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800"
+              className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
             >
               Submit Application
             </button>
@@ -222,11 +247,12 @@ function ClassDeclaration() {
                 >
                   Cancel
                 </button>
-                <button
+                                <button
                   onClick={confirmSubmit}
-                  className="bg-blue-900 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-blue-800"
+                  disabled={submitting}
+                  className="bg-navy text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-navy-light disabled:opacity-60"
                 >
-                  Yes, Submit
+                  {submitting ? 'Submitting...' : 'Yes, Submit'}
                 </button>
               </div>
             </div>

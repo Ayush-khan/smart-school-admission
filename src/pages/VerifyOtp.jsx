@@ -93,7 +93,7 @@ function VerifyOtp() {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-blue-900 sticky top-0 z-40">
+      <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Evolvu Smart School logo" className="w-10 h-10 bg-white rounded-full object-contain p-0.5 flex-shrink-0" />

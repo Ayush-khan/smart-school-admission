@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import InquiryModal from '../components/InquiryModal'
+import EnquiryModal from '../components/EnquiryModal'
 import logo from '../assets/evolvu-logo.webp'
 import { getClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
@@ -10,7 +10,7 @@ import { clearFormId, saveFormId } from '../utils/formId'
 
 function Dashboard() {
   const navigate = useNavigate()
-  const [showInquiry, setShowInquiry] = useState(false)
+  const [showEnquiry, setShowEnquiry] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
   const [activeTab, setActiveTab] = useState('applications')
@@ -178,7 +178,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-blue-900 sticky top-0 z-40">
+      <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-1">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Evolvu Smart School logo" className="w-9 h-9 bg-white rounded-full object-contain p-0.5 flex-shrink-0" />
@@ -202,14 +202,14 @@ function Dashboard() {
       <main className="max-w-5xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Apply for New Admission card */}
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-400 rounded-xl shadow-md p-6 text-white relative" ref={dropdownRef}>
-            <h2 className="text-lg font-semibold mb-4 text-center">Apply for New Admission</h2>
+                  <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-lg p-6 text-white relative border-t-4 border-brass" ref={dropdownRef}>
+            <h2 className="text-lg font-semibold mb-4 text-center tracking-tight">Apply For New Admission</h2>
 
             <button
               type="button"
               onClick={() => setDropdownOpen((prev) => !prev)}
               disabled={loadingClasses}
-              className="w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-slate-800 text-sm font-medium disabled:opacity-60"
+              className="w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-navy text-sm font-medium disabled:opacity-60"
             >
               {loadingClasses ? 'Loading classes...' : 'SELECT CLASS'}
               <span className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}>▾</span>
@@ -236,28 +236,28 @@ function Dashboard() {
           </div>
 
           {/* Forms + Enquiries count card */}
-          <div className="bg-gradient-to-br from-amber-400 to-orange-300 rounded-xl shadow-md p-6 text-center">
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">Forms</h2>
+                    <div className="bg-white rounded-xl shadow-md p-6 text-center border-t-4 border-brass">
+            <h2 className="text-lg font-semibold text-navy mb-3">Forms</h2>
             <div className="flex items-center justify-center gap-6">
               <div>
-                <p className="text-3xl font-bold text-slate-800">{loadingSummary ? '—' : summary.totalFormsRegistered}</p>
-                <p className="text-xs text-slate-700 mt-1">Admission Forms</p>
+                <p className="text-3xl font-bold text-brass">{loadingSummary ? '—' : summary.totalFormsRegistered}</p>
+                <p className="text-xs text-slate-500 mt-1">Admission Forms</p>
               </div>
-              <div className="w-px h-10 bg-slate-800/20" />
+              <div className="w-px h-10 bg-slate-200" />
               <div>
-                <p className="text-3xl font-bold text-slate-800">{loadingEnquiries ? '—' : enquiries.length}</p>
-                <p className="text-xs text-slate-700 mt-1">Enquiries</p>
+                <p className="text-3xl font-bold text-brass">{loadingEnquiries ? '—' : enquiries.length}</p>
+                <p className="text-xs text-slate-500 mt-1">Enquiries</p>
               </div>
             </div>
           </div>
 
           {/* Admission Enquiry card (replaces Form Fee) */}
-          <div className="bg-gradient-to-br from-emerald-400 to-teal-200 rounded-xl shadow-md p-6 text-center flex flex-col items-center justify-center">
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">Have a Question?</h2>
+            <div className="bg-white rounded-xl shadow-md p-6 text-center flex flex-col items-center justify-center border-t-4 border-brass">
+            <h2 className="text-lg font-semibold text-navy mb-3">For Admission Request</h2>
             <button
               type="button"
-              onClick={() => setShowInquiry(true)}
-              className="bg-blue-900 text-white text-sm font-medium px-5 py-2.5 rounded-full hover:bg-blue-800"
+              onClick={() => setShowEnquiry(true)}
+              className="bg-navy text-white text-sm font-medium px-5 py-2.5 rounded-full hover:bg-[#1E3A5F]"
             >
               💬 Admission Enquiry
             </button>
@@ -270,7 +270,7 @@ function Dashboard() {
             type="button"
             onClick={() => setActiveTab('applications')}
             className={`px-5 py-2 text-sm font-semibold rounded-t-lg ${
-              activeTab === 'applications' ? 'bg-white text-blue-900 shadow' : 'bg-slate-200 text-slate-600'
+              activeTab === 'applications' ? 'bg-white text-navy shadow' : 'bg-slate-100 text-slate-500'
             }`}
           >
             Admission Applications
@@ -279,7 +279,7 @@ function Dashboard() {
             type="button"
             onClick={() => setActiveTab('enquiries')}
             className={`px-5 py-2 text-sm font-semibold rounded-t-lg ${
-              activeTab === 'enquiries' ? 'bg-white text-blue-900 shadow' : 'bg-slate-200 text-slate-600'
+              activeTab === 'enquiries' ? 'bg-white text-navy shadow' : 'bg-slate-100 text-slate-500'
             }`}
           >
             Enquiries
@@ -289,7 +289,7 @@ function Dashboard() {
         {activeTab === 'applications' && (
           <div className="bg-white rounded-xl shadow-md overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-slate-400 text-white">
+              <thead className="bg-navy text-white">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Form No</th>
                   <th className="px-4 py-3 font-semibold">Full Name</th>
@@ -352,7 +352,7 @@ function Dashboard() {
         {activeTab === 'enquiries' && (
           <div className="bg-white rounded-xl shadow-md overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-slate-400 text-white">
+              <thead className="bg-navy text-white">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Enquiry No</th>
                   <th className="px-4 py-3 font-semibold">Student Name</th>
@@ -389,7 +389,7 @@ function Dashboard() {
         )}
       </main>
 
-      {showInquiry && <InquiryModal onClose={() => setShowInquiry(false)} />}
+      {showEnquiry && <EnquiryModal onClose={() => setShowEnquiry(false)} />}
     </div>
   )
 }

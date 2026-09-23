@@ -36,7 +36,7 @@ function ApplicationStepperLayout({ currentStep, children }) {
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
                     isActive
-                      ? 'bg-blue-900 text-white'
+                      ? 'bg-navy text-white'
                       : isDone
                       ? 'bg-green-600 text-white'
                       : 'bg-slate-200 text-slate-500'
@@ -46,7 +46,7 @@ function ApplicationStepperLayout({ currentStep, children }) {
                 </div>
                 <span
                   className={`text-xs whitespace-nowrap ${
-                    isActive ? 'text-blue-900 font-medium' : 'text-slate-500'
+                    isActive ? 'text-navy font-medium' : 'text-slate-500'
                   }`}
                 >
                   {step}
@@ -61,11 +61,11 @@ function ApplicationStepperLayout({ currentStep, children }) {
       {/* Mobile compact progress */}
       <div className="sm:hidden bg-white rounded-xl shadow-sm mb-6 px-4 py-3">
         <p className="text-xs text-slate-500 mb-1">
-          Step {currentStep} of {steps.length}: <span className="font-medium text-blue-900">{steps[currentStep - 1]}</span>
+          Step {currentStep} of {steps.length}: <span className="font-medium text-navy">{steps[currentStep - 1]}</span>
         </p>
         <div className="w-full bg-slate-200 rounded-full h-1.5">
           <div
-            className="bg-blue-900 h-1.5 rounded-full transition-all"
+            className="bg-navy h-1.5 rounded-full transition-all"
             style={{ width: `${(currentStep / steps.length) * 100}%` }}
           />
         </div>

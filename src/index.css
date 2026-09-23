@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --color-navy: #0F2A4A;
+  --color-navy-light: #1E3A5F;
+  --color-brass: #B8923F;
+}
 /* :root {
   --text: #6b6375;
   --text-h: #08060d;

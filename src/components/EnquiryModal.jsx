@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import { getEnquiryClasses, getEnquiryGenders, submitInquiry } from '../services/applicationService'
+import { getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 
-function InquiryModal({ onClose }) {
+function EnquiryModal({ onClose }) {
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -78,7 +78,7 @@ function InquiryModal({ onClose }) {
     setError('')
     setSubmitting(true)
     try {
-        await submitInquiry({
+        await submitEnquiry({
         first_name: firstName.trim(),
         middle_name: middleName.trim(),
         last_name: lastName.trim(),
@@ -96,10 +96,10 @@ function InquiryModal({ onClose }) {
         current_school: currentSchool.trim(),
         message: message.trim(),
       })
-      toast.success('Your inquiry has been submitted. We will get back to you soon.')
+      toast.success('Your Enquiry has been submitted. We will get back to you soon.')
       onClose()
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Could not submit your inquiry.'))
+      toast.error(getErrorMessage(err, 'Could not submit your enquiry.'))
     } finally {
       setSubmitting(false)
     }
@@ -115,7 +115,7 @@ function InquiryModal({ onClose }) {
           </button>
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Send us your inquiry and our admission team will get back to you.
+          Send us your enquiry and our admission team will get back to you.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -238,7 +238,7 @@ function InquiryModal({ onClose }) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-blue-900 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-blue-800 disabled:opacity-60"
+            className="w-full bg-navy text-white text-sm font-medium py-2.5 rounded-lg hover:bg-navy-light disabled:opacity-60"
           >
             {submitting ? 'Submitting...' : 'Submit Enquiry'}
           </button>
@@ -248,4 +248,4 @@ function InquiryModal({ onClose }) {
   )
 }
 
-export default InquiryModal
+export default EnquiryModal

@@ -116,7 +116,7 @@ function ClassSiblingDetails() {
               </button>
               <button
                 type="submit"
-                className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800"
+                className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
               >
                 Save & Continue
               </button>
