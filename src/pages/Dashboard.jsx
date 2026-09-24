@@ -177,7 +177,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+       <div className="min-h-screen bg-page">
       <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-1">
           <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ function Dashboard() {
       <main className="max-w-5xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Apply for New Admission card */}
-                  <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-lg p-6 text-white relative border-t-4 border-brass" ref={dropdownRef}>
+           <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-xl p-6 text-white relative border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/50 hover:ring-2 hover:ring-brass" ref={dropdownRef}>
             <h2 className="text-lg font-semibold mb-4 text-center tracking-tight">Apply For New Admission</h2>
 
             <button
@@ -236,7 +236,7 @@ function Dashboard() {
           </div>
 
           {/* Forms + Enquiries count card */}
-                    <div className="bg-white rounded-xl shadow-md p-6 text-center border-t-4 border-brass">
+         <div className="bg-white rounded-xl shadow-xl p-6 text-center border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/30 hover:ring-2 hover:ring-brass">
             <h2 className="text-lg font-semibold text-navy mb-3">Forms</h2>
             <div className="flex items-center justify-center gap-6">
               <div>
@@ -252,7 +252,7 @@ function Dashboard() {
           </div>
 
           {/* Admission Enquiry card (replaces Form Fee) */}
-            <div className="bg-white rounded-xl shadow-md p-6 text-center flex flex-col items-center justify-center border-t-4 border-brass">
+          <div className="bg-white rounded-xl shadow-xl p-6 text-center flex flex-col items-center justify-center border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/30 hover:ring-2 hover:ring-brass">
             <h2 className="text-lg font-semibold text-navy mb-3">For Admission Request</h2>
             <button
               type="button"

@@ -32,7 +32,7 @@ function ClassLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-page">
       <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3">

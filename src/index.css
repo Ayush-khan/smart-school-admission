@@ -11,6 +11,88 @@
   --color-navy-light: #1E3A5F;
   --color-brass: #B8923F;
   --color-ivory: #F4F6F9;
+  --color-page: #E9EEF5;
+}
+
+/* Sweep button animation */
+.btn-sweep {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color 0.15s ease;
+}
+
+.btn-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -25%;
+  width: 150%;
+  background: var(--sweep-color);
+  transform: skewX(-30deg) scaleX(0);
+  transition: transform 0.4s ease;
+  z-index: -1;
+}
+
+@media (hover: hover) {
+  .btn-sweep:hover:not(:disabled)::before {
+    transform: skewX(-30deg) scaleX(1);
+  }
+  .btn-sweep:hover:not(:disabled) {
+    color: var(--sweep-text);
+  }
+}
+
+/* Wipe + letter drop animation */
+.btn-wipe {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.btn-wipe::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--wipe-color);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.4s ease;
+  z-index: -1;
+}
+
+.btn-wipe .btn-letter {
+  display: inline-block;
+  transition: color 0.3s ease;
+}
+
+.btn-wipe .btn-letter:nth-child(odd) { --y: -12px; }
+.btn-wipe .btn-letter:nth-child(even) { --y: 12px; }
+
+@keyframes letter-drop {
+  from { opacity: 0; transform: translateY(var(--y)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (hover: hover) {
+  .btn-wipe:hover:not(:disabled)::before {
+    transform: scaleY(1);
+  }
+  .btn-wipe:hover:not(:disabled) .btn-letter {
+    color: var(--wipe-text);
+    animation: letter-drop 0.45s ease both;
+    animation-delay: calc(var(--i) * 0.06s + 0.1s);
+  }
+}
+
+@media (hover: none) {
+  .btn-sweep:active:not(:disabled)::before {
+    transform: skewX(-30deg) scaleX(1);
+  }
+  .btn-sweep:active:not(:disabled) {
+    color: var(--sweep-text);
+  }
 }
 
 

@@ -17,7 +17,7 @@ function ApplicationLayout({ currentStep, children }) {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-page">
       <header className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-lg font-bold text-navy">Arnolds School — Application Form</h1>

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import logo from '../assets/evolvu-logo.webp'
-import { createRegistration, resendOtp } from '../services/authService'
+import { checkExistingUser, createRegistration, resendOtp } from '../services/authService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { saveSessionInfo } from '../utils/session'
+import loginVideo from '../assets/Login_video_Students.mp4'
 
 function Login() {
   const [mode, setMode] = useState('mobile') // 'mobile' or 'email'
@@ -13,6 +14,8 @@ function Login() {
   const [contactError, setContactError] = useState('')
   const [fullNameError, setFullNameError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [nameLocked, setNameLocked] = useState(false)
+  const [existingNarId, setExistingNarId] = useState(null)
   const navigate = useNavigate()
   const [today, setToday] = useState('')
 
@@ -20,7 +23,43 @@ function Login() {
     setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
   }, [])
 
-      const validate = () => {
+  // Clears the auto-filled name when the contact or mode changes
+  const resetExistingUser = () => {
+    if (nameLocked) setFullName('')
+    setNameLocked(false)
+    setExistingNarId(null)
+  }
+
+  // Check Existing User: runs once the contact looks valid (read-only lookup)
+  useEffect(() => {
+    const valid = mode === 'mobile' ? /^\d{10}$/.test(contact) : /^\S+@\S+\.\S+$/.test(contact)
+    if (!valid) return
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const res = await checkExistingUser({ mode, contact })
+        if (cancelled) return
+        const d = res?.data ?? res
+        const exists = [true, 1, '1', 'true'].includes(d?.exists ?? res?.exists)
+        if (exists && d?.parent_name) {
+          setFullName(d.parent_name)
+          setFullNameError('')
+          setNameLocked(true)
+          setExistingNarId(d.nar_id ?? d.narId ?? null)
+        }
+      } catch (err) {
+        console.warn('check-user failed, continuing as new user', err)
+      }
+    }, 500)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [contact, mode])
+
+  const validate = () => {
     let valid = true
 
     if (!contact.trim()) {
@@ -36,7 +75,9 @@ function Login() {
       setContactError('')
     }
 
-       if (!fullName.trim()) {
+    if (nameLocked) {
+      setFullNameError('')
+    } else if (!fullName.trim()) {
       setFullNameError('Full name is required')
       valid = false
     } else if (fullName.trim().length > 100) {
@@ -52,9 +93,15 @@ function Login() {
     return valid
   }
 
-  // Step 2 + Step 3 of the Frontend Flow: register, then send the OTP.
-    // Shared lookup step: register (or find the existing account) and get narId.
-    const lookupNarId = async () => {
+  // Shared lookup step: reuse the existing account, otherwise register.
+  const lookupNarId = async () => {
+    // Existing user (found by the check-user lookup above)
+    if (existingNarId) {
+      saveSessionInfo({ narId: existingNarId, mode, contact, fullName })
+      return existingNarId
+    }
+
+    // New user: Start registration
     const result = await createRegistration({ fullName, mode, contact })
     if (result.success === false) {
       setContactError(result.message || 'Registration failed. Please try again.')
@@ -71,7 +118,7 @@ function Login() {
 
   // "Use OTP / Password" — for logging in with an OTP the user already has.
   // Does NOT trigger a new OTP send.
-    const submitLogin = async () => {
+  const submitLogin = async () => {
     if (!validate()) return
     setLoading(true)
     setContactError('')
@@ -86,8 +133,9 @@ function Login() {
       setLoading(false)
     }
   }
+
   // "Resend OTP" — explicitly requests a brand-new OTP.
-    const submitResendOtp = async () => {
+  const submitResendOtp = async () => {
     if (!validate()) return
     setLoading(true)
     setContactError('')
@@ -95,7 +143,7 @@ function Login() {
     try {
       const narId = await lookupNarId()
       if (!narId) return
-            try {
+      try {
         await resendOtp({ narId, mode, contact })
       } catch (otpErr) {
         setContactError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
@@ -135,27 +183,36 @@ function Login() {
       </header>
 
       <div
-        className="flex items-center justify-center px-4 py-10 bg-cover bg-center"
-        style={{
-          minHeight: 'calc(100vh - 52px)',
-          backgroundImage:
-            "linear-gradient(rgba(15,23,42,0.35), rgba(15,23,42,0.35)), url('https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=1600&auto=format&fit=crop')",
-        }}
+        className="relative flex items-center justify-center px-4 py-8 sm:py-10 overflow-hidden bg-slate-800"
+        style={{ minHeight: 'calc(100dvh - 52px)' }}
       >
-        <div className="flex flex-col lg:flex-row gap-6 max-w-4xl w-full">
-          {/* Login card */}
-          <div className="flex-1 bg-white/20 backdrop-blur-md rounded-2xl shadow-xl p-8 border border-white/30">
-            <h1 className="text-3xl font-bold text-slate-900 text-center mb-6">Admission Login</h1>
+        <video
+          src={loginVideo}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-slate-900/10" />
 
-            <div className="flex rounded-full bg-white/40 p-1 mb-6">
+        <div className="relative flex flex-col lg:flex-row gap-5 max-w-3xl w-full">
+          {/* Login card */}
+          <div className="flex-1 bg-white/20 backdrop-blur-md rounded-2xl shadow-xl p-5 sm:p-6 border border-white/30">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-4">Admission Login</h1>
+
+            <div className="flex rounded-full bg-white/40 p-1 mb-4">
               <button
                 type="button"
                 onClick={() => {
+                  resetExistingUser()
                   setMode('mobile')
                   setContactError('')
                   setFullNameError('')
                 }}
-                className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition ${
+                className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
                   mode === 'mobile' ? 'bg-orange-400 text-slate-900 shadow' : 'text-slate-700'
                 }`}
               >
@@ -164,18 +221,20 @@ function Login() {
               <button
                 type="button"
                 onClick={() => {
+                  resetExistingUser()
                   setMode('email')
                   setContactError('')
                   setFullNameError('')
                 }}
-                className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition ${
+                className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
                   mode === 'email' ? 'bg-orange-400 text-slate-900 shadow' : 'text-slate-700'
                 }`}
               >
                 Email Login
               </button>
             </div>
-            <form onSubmit={handleContinue} className="space-y-4">
+
+            <form onSubmit={handleContinue} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
                   {mode === 'mobile' ? 'Mobile Number' : 'Email Address'}
@@ -183,8 +242,11 @@ function Login() {
                 <input
                   type={mode === 'mobile' ? 'tel' : 'email'}
                   value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  className="w-full bg-white/70 border-none rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  onChange={(e) => {
+                    setContact(e.target.value)
+                    resetExistingUser()
+                  }}
+                  className="w-full bg-white/70 border-none rounded-lg px-4 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   placeholder={mode === 'mobile' ? '10-digit mobile number' : 'you@example.com'}
                 />
                 {contactError && <p className="text-sm text-red-200 font-medium mt-1">{contactError}</p>}
@@ -192,21 +254,27 @@ function Login() {
 
               <div>
                 <label className="block text-sm font-medium text-white mb-1">Full Name</label>
-                              <input
+                <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  readOnly={nameLocked}
                   maxLength={100}
-                  className="w-full bg-white/70 border-none rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className={`w-full border-none rounded-lg px-4 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                    nameLocked ? 'bg-white/40 text-slate-700 cursor-not-allowed' : 'bg-white/70'
+                  }`}
                   placeholder="Enter your full name"
                 />
+                {nameLocked && (
+                  <p className="text-xs text-white/90 mt-1">Existing account found. Name is filled from your registration.</p>
+                )}
                 {fullNameError && <p className="text-sm text-red-200 font-medium mt-1">{fullNameError}</p>}
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-400 hover:bg-orange-500 disabled:opacity-60 text-slate-900 font-semibold py-3 rounded-full transition"
+                className="w-full bg-orange-400 disabled:opacity-60 text-slate-900 font-semibold py-2.5 rounded-full btn-sweep [--sweep-color:#0F172A] [--sweep-text:#fff]"
               >
                 {loading ? 'Please wait...' : 'Use OTP / Password'}
               </button>
@@ -216,16 +284,16 @@ function Login() {
               type="button"
               onClick={handleResend}
               disabled={loading}
-              className="w-full mt-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-3 rounded-full transition"
+              className="w-full mt-3 bg-blue-600 disabled:opacity-60 text-white font-semibold py-2.5 rounded-full btn-sweep [--sweep-color:#fff] [--sweep-text:#2563eb]"
             >
               Resend OTP to {mode === 'mobile' ? 'mobile number' : 'your email ID'}
             </button>
           </div>
 
           {/* Instructions card */}
-          <div className="lg:w-80 bg-white/85 backdrop-blur-md rounded-2xl shadow-xl p-8 self-start">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Instructions</h2>
-            <ul className="list-disc list-outside pl-5 space-y-4 text-sm text-slate-700">
+          <div className="lg:w-75 bg-white/85 backdrop-blur-md rounded-2xl shadow-xl p-5 self-start">
+            <h2 className="text-xl font-bold text-slate-900 mb-3">Instructions</h2>
+            <ul className="list-disc list-outside pl-5 space-y-3 text-sm text-slate-700">
               <li>The OTP you receive during your first login will become your password.</li>
               <li>Please keep this OTP safe for future logins.</li>
               <li>Every time you log in, you can use this first OTP as your password.</li>

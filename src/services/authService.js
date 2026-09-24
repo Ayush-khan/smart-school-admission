@@ -45,6 +45,16 @@ export async function sendOtp({ narId, mode, contact }) {
   return response.data
 }
 
+// Check Existing User
+// GET /api/admission/registration/check-user
+// ASSUMPTION: the guide only says "query params as required by backend
+// (e.g. mobile number/email)". Using the same names as createRegistration.
+export async function checkExistingUser({ mode, contact }) {
+  const params = mode === 'mobile' ? { phone_no: contact } : { email: contact }
+  const response = await apiClient.get('/api/admission/registration/check-user', { params })
+  return response.data
+}
+
 // ---------------------------------------------------------------------------
 // Step 4: Verify OTP
 // POST /api/admission/verify-otp
