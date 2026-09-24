@@ -180,17 +180,30 @@ function ClassDocuments() {
             </div>
           )}
 
-                   <p className="text-xs text-slate-500 mt-6 text-left">
-            Please ensure that your image/PDF file is less than {MAX_FILE_SIZE_KB}kb.{' '}
-            
-             <a href="https://www.ilovepdf.com/compress_pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-700 font-medium hover:underline"
-            >
-              Click here to compress your images
-            </a>
-          </p>
+          <div className="text-xs text-slate-500 mt-6 text-left space-y-1">
+            <p>
+              Please ensure that your PDF file is less than {MAX_FILE_SIZE_KB}kb.{' '}
+              <a
+                href="https://www.ilovepdf.com/compress_pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-700 font-medium hover:underline"
+              >
+                Click here to compress your PDF
+              </a>
+            </p>
+            <p>
+              Please ensure that your image file is less than {MAX_FILE_SIZE_KB}kb.{' '}
+              <a
+                href="https://www.resizepixel.com/reduce-image-in-kb/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-700 font-medium hover:underline"
+              >
+                Click here to compress your Image
+              </a>
+            </p>
+          </div>
 
           <div className="flex justify-between gap-3 pt-6 mt-6 border-t border-slate-200">
             <button
