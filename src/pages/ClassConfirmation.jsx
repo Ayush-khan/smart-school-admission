@@ -42,7 +42,7 @@ function ClassConfirmation() {
 
         <div className="bg-slate-50 rounded-lg p-4 mb-6">
           <p className="text-xs text-slate-500">Application Number</p>
-          <p className="text-lg font-bold text-blue-900">{formId}</p>
+          <p className="text-lg font-bold text-navy">{formId}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm text-left mb-8">
@@ -90,7 +90,7 @@ function ClassConfirmation() {
           </button>
           <button
             onClick={() => navigate(`/class/${classId}/status`)}
-            className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800"
+            className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
           >
             Track Application
           </button>

@@ -84,7 +84,7 @@ function ClassReceipt() {
             <div ref={receiptRef} className="bg-white rounded-xl shadow-sm p-8 max-w-xl mx-auto">
         <div className="text-center mb-6 pb-6 border-b border-slate-200">
          <img src={logo} alt="Evolvu Smart School logo" className="w-14 h-14 bg-white rounded-full object-contain p-1 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-blue-900">Evolvu Smart School</h2>
+          <h2 className="text-lg font-bold text-navy">Evolvu Smart School</h2>
           <p className="text-xs text-slate-500">Online Admission Portal — Payment Receipt</p>
         </div>
 
@@ -125,7 +125,7 @@ function ClassReceipt() {
 
         <div className="bg-slate-50 rounded-lg p-4 flex justify-between items-center mb-8">
           <span className="text-sm font-medium text-slate-700">Amount Paid</span>
-          <span className="text-lg font-bold text-blue-900">Rs. {amount.toLocaleString()}/-</span>
+          <span className="text-lg font-bold text-navy">Rs. {amount.toLocaleString()}/-</span>
         </div>
 
                     <div className="text-center mb-4">
@@ -140,7 +140,7 @@ function ClassReceipt() {
          <div className="flex flex-col sm:flex-row justify-center gap-3">
           <button
             onClick={handleDownload}
-            className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800"
+            className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
           >
             ⬇️ Download Receipt
           </button>
@@ -152,7 +152,7 @@ function ClassReceipt() {
           </button>
           <button
             onClick={() => navigate(`/class/${classId}/status`)}
-            className="bg-blue-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-800"
+            className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
           >
             Track Application
           </button>

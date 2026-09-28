@@ -60,7 +60,7 @@ function ClassStatus() {
                   stage.done
                     ? 'bg-green-600 text-white'
                     : stage.current
-                    ? 'bg-blue-900 text-white'
+                    ? 'bg-navy text-white'
                     : 'bg-slate-200 text-slate-400'
                 }`}
               >

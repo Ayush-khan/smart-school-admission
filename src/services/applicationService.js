@@ -137,7 +137,7 @@ export async function downloadOnlineFormPdf(formId, narId) {
 // convention but are NOT confirmed by backend — verify against the real
 // AdmissionEnquiryController validation rules before trusting this.
 // ---------------------------------------------------------------------------
-export async function submitInquiry(payload) {
+export async function submitEnquiry(payload) {
   const response = await apiClient.post('/api/admission/enquiries', payload)
   return response.data
 }
@@ -163,5 +163,47 @@ export async function getEnquiryClasses() {
 // ---------------------------------------------------------------------------
 export async function getEnquiryGenders() {
   const response = await apiClient.get('/api/admission/enquiry/genders')
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
+// List Admission Enquiries — GET /api/admission/enquiries
+// ASSUMPTION: documented as an admin-wide listing — passing nar_id/contact as
+// filters is UNCONFIRMED. Verify via Network tab that this actually restricts
+// results to the logged-in user before trusting it anywhere user-facing.
+// ---------------------------------------------------------------------------
+export async function listAdmissionEnquiries(params = {}) {
+  const response = await apiClient.get('/api/admission/enquiries', { params })
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
+// Save Admission Signature — POST /api/admission/signature
+// ---------------------------------------------------------------------------
+export async function saveAdmissionSignature({
+  formId,
+  signatureType,
+  signatureName,
+  signatureFile,
+  declarationConfirmed,
+  termsAccepted,
+  privacyAccepted,
+}) {
+  const formData = new FormData()
+  formData.append('form_id', formId)
+  formData.append('signature_type', signatureType)
+  if (signatureType === 'typed') {
+    formData.append('signature_name', signatureName)
+  }
+  if (signatureType === 'pdf' && signatureFile) {
+    formData.append('signature_file', signatureFile)
+  }
+  formData.append('declaration_confirmed', declarationConfirmed ? 'Y' : 'N')
+  formData.append('terms_accepted', termsAccepted ? 'Y' : 'N')
+  formData.append('privacy_accepted', privacyAccepted ? 'Y' : 'N')
+
+  const response = await apiClient.post('/api/admission/signature', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
   return response.data
 }

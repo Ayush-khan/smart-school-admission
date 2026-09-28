@@ -1,34 +1,36 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import InquiryModal from '../components/InquiryModal'
+import EnquiryModal from '../components/EnquiryModal'
 import logo from '../assets/evolvu-logo.webp'
-import { getClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf } from '../services/applicationService'
+import { getClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
 
 function Dashboard() {
   const navigate = useNavigate()
-  const [showInquiry, setShowInquiry] = useState(false)
+  const [showEnquiry, setShowEnquiry] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
+  const [activeTab, setActiveTab] = useState('applications')
 
-  const { fullName, narId } = getSessionInfo()
+  const { fullName, narId, contact } = getSessionInfo()
 
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
 
-  // ASSUMPTION: the dashboard response shape isn't specified beyond "dashboard
-  // data/status" — adjust the field names below (totalFormsRegistered / amountPaid)
-  // once you can see the real payload.
-   const [summary, setSummary] = useState({ totalFormsRegistered: 0, amountPaid: 0 })
+  const [summary, setSummary] = useState({ totalFormsRegistered: 0, amountPaid: 0 })
   const [loadingSummary, setLoadingSummary] = useState(true)
 
-  // ASSUMPTION: field names in each form row aren't documented yet — adjust
-  // the mapping in the table below once you see the real payload.
   const [forms, setForms] = useState([])
   const [loadingForms, setLoadingForms] = useState(true)
+
+  // ASSUMPTION: no confirmed way to scope this to just the logged-in user's
+  // own enquiries — see note in applicationService.js. Must be confirmed with
+  // backend before this is trusted in production.
+  const [enquiries, setEnquiries] = useState([])
+  const [loadingEnquiries, setLoadingEnquiries] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -54,8 +56,8 @@ function Dashboard() {
         const data = result.data ?? result
         if (!cancelled && data) {
           setSummary({
-            totalFormsRegistered: data.totalFormsRegistered ?? data.total_forms_registered ?? 0,
-            amountPaid: data.amountPaid ?? data.amount_paid ?? 0,
+            totalFormsRegistered: data.forms_count ?? 0,
+            amountPaid: data.amount_paid ?? 0,
           })
         }
       } catch (err) {
@@ -65,7 +67,7 @@ function Dashboard() {
       }
     }
 
-        async function loadForms() {
+    async function loadForms() {
       try {
         if (!narId) return
         const result = await listOnlineForms({ nar_id: narId })
@@ -78,13 +80,29 @@ function Dashboard() {
       }
     }
 
+    async function loadEnquiries() {
+      try {
+        // ASSUMPTION: passing nar_id/contact as filters — UNCONFIRMED whether
+        // backend actually honors these. Verify via Network tab before trusting
+        // this count or table for anything user-facing.
+        const result = await listAdmissionEnquiries({ nar_id: narId, contact })
+        const list = result?.data?.enquiries ?? result?.data ?? []
+        if (!cancelled) setEnquiries(Array.isArray(list) ? list : [])
+      } catch (err) {
+        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load enquiries.'))
+      } finally {
+        if (!cancelled) setLoadingEnquiries(false)
+      }
+    }
+
     loadClasses()
     loadSummary()
     loadForms()
+    loadEnquiries()
     return () => {
       cancelled = true
     }
-  }, [narId])
+  }, [narId, contact])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -105,17 +123,17 @@ function Dashboard() {
     })
   }
 
-    const handleLogout = () => {
+  const handleLogout = () => {
     clearSession()
     navigate('/login')
   }
 
-        const handleEditForm = (form) => {
+  const handleEditForm = (form) => {
     saveFormId(form.class_id, form.form_id)
     navigate(`/class/${form.class_id}/application/review`)
   }
 
-    const handlePayForm = (form) => {
+  const handlePayForm = (form) => {
     saveFormId(form.class_id, form.form_id)
     navigate(`/class/${form.class_id}/application/payment`)
   }
@@ -139,8 +157,18 @@ function Dashboard() {
     return match?.label ?? match?.class_name ?? match?.name ?? classId
   }
 
-   const getFullName = (form) => {
+  const getFullName = (form) => {
     return [form.first_name, form.mid_name, form.last_name].filter(Boolean).join(' ')
+  }
+
+  // ASSUMPTION: field names for an enquiry row are unconfirmed — verify via
+  // Network tab once you have real enquiry data and correct these.
+  const getEnquiryStudentName = (enquiry) => {
+    return (
+      [enquiry.first_name, enquiry.middle_name, enquiry.last_name].filter(Boolean).join(' ') ||
+      enquiry.student_name ||
+      '—'
+    )
   }
 
   const isPaid = (form) => {
@@ -149,8 +177,8 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-blue-900 sticky top-0 z-40">
+       <div className="min-h-screen bg-page">
+      <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-1">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Evolvu Smart School logo" className="w-9 h-9 bg-white rounded-full object-contain p-0.5 flex-shrink-0" />
@@ -173,127 +201,222 @@ function Dashboard() {
 
       <main className="max-w-5xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {/* Create New Form card */}
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-400 rounded-xl shadow-md p-6 text-white relative" ref={dropdownRef}>
-            <h2 className="text-lg font-semibold mb-4 text-center">Create New Form</h2>
+          {/* Apply for New Admission card */}
+           <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-xl p-6 text-white relative border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/50 hover:ring-2 hover:ring-brass" ref={dropdownRef}>
+            <h2 className="text-lg font-semibold mb-4 text-center tracking-tight">Apply For New Admission</h2>
 
-            <button
+                      <button
               type="button"
               onClick={() => setDropdownOpen((prev) => !prev)}
               disabled={loadingClasses}
-              className="w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-slate-800 text-sm font-medium disabled:opacity-60"
+              aria-expanded={dropdownOpen}
+              className={`w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-navy text-sm font-medium transition-all duration-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brass disabled:opacity-60 ${
+                dropdownOpen ? 'ring-2 ring-brass' : ''
+              }`}
             >
               {loadingClasses ? 'Loading classes...' : 'SELECT CLASS'}
-              <span className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}>▾</span>
+              <span className={`text-brass transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}>▾</span>
             </button>
 
-            {dropdownOpen && (
-              <div className="absolute left-6 right-6 mt-1 bg-white rounded-lg shadow-lg overflow-hidden z-50 text-slate-800">
-                {classes.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-slate-500">No classes available.</p>
-                ) : (
-                  classes.map((c) => (
+            <div
+              className={`absolute left-6 right-6 mt-2 bg-white rounded-lg shadow-2xl ring-1 ring-black/5 overflow-hidden z-50 text-slate-800 origin-top transition-all duration-200 ease-out motion-reduce:transition-none ${
+                dropdownOpen
+                  ? 'opacity-100 translate-y-0 scale-100 visible'
+                  : 'opacity-0 -translate-y-2 scale-95 invisible pointer-events-none'
+              }`}
+            >
+              {classes.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-slate-500">No classes available.</p>
+              ) : (
+                classes.map((c, i) => (
+                  <div
+                    key={c.id ?? c.class_id}
+                    className={`transition-all duration-300 ease-out motion-reduce:transition-none ${
+                      dropdownOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+                    }`}
+                    style={{ transitionDelay: dropdownOpen ? `${80 + i * 45}ms` : '0ms' }}
+                  >
                     <button
-                      key={c.id ?? c.class_id}
                       type="button"
                       onClick={() => handleClassSelect(c)}
-                      className="w-full text-left px-4 py-3 text-sm font-medium hover:bg-slate-100 border-b border-slate-100 last:border-0"
+                      className="group relative w-full text-left px-4 py-3 text-sm font-medium border-b border-slate-100 transition-all duration-200 hover:bg-slate-50 hover:pl-6 hover:text-navy"
                     >
+                      <span className="absolute left-0 top-0 h-full w-1 bg-brass scale-y-0 group-hover:scale-y-100 transition-transform duration-200" />
                       {c.label ?? c.class_name ?? c.name}
                     </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Forms card */}
-          <div className="bg-gradient-to-br from-amber-400 to-orange-300 rounded-xl shadow-md p-6 text-center">
-            <h2 className="text-lg font-semibold text-slate-800 mb-2">Forms</h2>
-            <p className="text-3xl font-bold text-slate-800">{loadingSummary ? '—' : summary.totalFormsRegistered}</p>
-            <p className="text-xs text-slate-700 mt-1">Total admission form registered</p>
-          </div>
-
-          {/* Form Fee card */}
-          <div className="bg-gradient-to-br from-emerald-400 to-teal-200 rounded-xl shadow-md p-6 text-center">
-            <h2 className="text-lg font-semibold text-slate-800 mb-2">Form Fee</h2>
-            <p className="text-2xl font-bold text-slate-800">{loadingSummary ? '—' : `INR ${summary.amountPaid}`}</p>
-            <p className="text-xs text-slate-700 mt-1">Amount Paid</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md mt-8 overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-400 text-white">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Form No</th>
-                <th className="px-4 py-3 font-semibold">Full Name</th>
-                <th className="px-4 py-3 font-semibold">Class</th>
-                <th className="px-4 py-3 font-semibold">Application Status</th>
-                <th className="px-4 py-3 font-semibold">Interview Date</th>
-                <th className="px-4 py-3 font-semibold">Payment Status</th>
-                <th className="px-4 py-3 font-semibold">Payment</th>
-                <th className="px-4 py-3 font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingForms ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
-                    Loading applications...
-                  </td>
-                </tr>
-              ) : forms.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
-                    No admission forms yet.
-                  </td>
-                </tr>
-              ) : (
-                  forms.map((form) => (
-                  <tr key={form.form_id} className="border-t border-slate-100">
-                    <td className="px-4 py-3">{form.form_id}</td>
-                    <td className="px-4 py-3">{getFullName(form)}</td>
-                    <td className="px-4 py-3">{getClassLabel(form.class_id)}</td>
-                    <td className="px-4 py-3">{form.admission_form_status}</td>
-                    <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
-                    <td className="px-4 py-3">{form.payment_status ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      {!isPaid(form) && (
-                        <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
-                          💳
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {isPaid(form) ? (
-                        <button onClick={() => handleDownloadForm(form)} className="text-slate-600 hover:text-slate-800" title="Download">
-                          ⬇️
-                        </button>
-                      ) : (
-                        <button onClick={() => handleEditForm(form)} className="text-blue-600 hover:text-blue-800" title="Edit">
-                          ✏️
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
+
+          {/* Forms + Enquiries count card */}
+         <div className="bg-white rounded-xl shadow-xl p-6 text-center border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/30 hover:ring-2 hover:ring-brass">
+            <h2 className="text-lg font-semibold text-navy mb-3">Forms</h2>
+            <div className="flex items-center justify-center gap-6">
+              <div>
+                <p className="text-3xl font-bold text-brass">{loadingSummary ? '—' : summary.totalFormsRegistered}</p>
+                <p className="text-xs text-slate-500 mt-1">Admission Forms</p>
+              </div>
+              <div className="w-px h-10 bg-slate-200" />
+              <div>
+                <p className="text-3xl font-bold text-brass">{loadingEnquiries ? '—' : enquiries.length}</p>
+                <p className="text-xs text-slate-500 mt-1">Enquiries</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Admission Enquiry card (replaces Form Fee) */}
+          <div className="bg-white rounded-xl shadow-xl p-6 text-center flex flex-col items-center justify-center border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/30 hover:ring-2 hover:ring-brass">
+            <h2 className="text-lg font-semibold text-navy mb-3">For Admission Request</h2>
+            <button
+              type="button"
+              onClick={() => setShowEnquiry(true)}
+              className="bg-navy text-white text-sm font-medium px-5 py-2.5 rounded-full hover:bg-[#1E3A5F]"
+            >
+              💬 Admission Enquiry
+            </button>
+          </div>
         </div>
 
-        <div className="fixed bottom-6 right-6">
+                {/* Tabs */}
+        <div className="flex gap-2 mt-8">
           <button
-            onClick={() => setShowInquiry(true)}
-            className="bg-teal-600 text-white text-sm font-medium px-5 py-3 rounded-full shadow-lg hover:bg-teal-700 flex items-center gap-2"
+            type="button"
+            onClick={() => setActiveTab('applications')}
+            className={`px-5 py-2 text-sm font-semibold rounded-t-lg border-t-4 transition-all duration-200 ${
+              activeTab === 'applications'
+                ? 'bg-white text-navy shadow border-brass'
+                : 'bg-slate-100 text-slate-500 border-transparent hover:bg-white/70 hover:text-navy'
+            }`}
           >
-            💬 Admission Inquiry
+            Admission Applications
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('enquiries')}
+            className={`px-5 py-2 text-sm font-semibold rounded-t-lg border-t-4 transition-all duration-200 ${
+              activeTab === 'enquiries'
+                ? 'bg-white text-navy shadow border-brass'
+                : 'bg-slate-100 text-slate-500 border-transparent hover:bg-white/70 hover:text-navy'
+            }`}
+          >
+            Enquiries
           </button>
         </div>
+
+        {activeTab === 'applications' && (
+          <div className="bg-white rounded-xl shadow-md overflow-x-auto tab-panel">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-navy text-white">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Form No</th>
+                  <th className="px-4 py-3 font-semibold">Full Name</th>
+                  <th className="px-4 py-3 font-semibold">Class</th>
+                  <th className="px-4 py-3 font-semibold">Application Status</th>
+                  <th className="px-4 py-3 font-semibold">Interview Date</th>
+                  <th className="px-4 py-3 font-semibold">Payment Status</th>
+                  <th className="px-4 py-3 font-semibold">Payment</th>
+                  <th className="px-4 py-3 font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingForms ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                      Loading applications...
+                    </td>
+                  </tr>
+                ) : forms.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                      No admission forms yet.
+                    </td>
+                  </tr>
+                ) : (
+                 forms.map((form, i) => (
+                      <tr
+                        key={form.form_id}
+                        className="border-t border-slate-100 row-in hover:bg-slate-50 transition-colors"
+                        style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                      >
+                      <td className="px-4 py-3">{form.form_id}</td>
+                      <td className="px-4 py-3">{getFullName(form)}</td>
+                      <td className="px-4 py-3">{getClassLabel(form.class_id)}</td>
+                      <td className="px-4 py-3">{form.admission_form_status}</td>
+                      <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
+                      <td className="px-4 py-3">{form.payment_status ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        {!isPaid(form) && (
+                          <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
+                            💳
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isPaid(form) ? (
+                          <button onClick={() => handleDownloadForm(form)} className="text-slate-600 hover:text-slate-800" title="Download">
+                            ⬇️
+                          </button>
+                        ) : (
+                          <button onClick={() => handleEditForm(form)} className="text-blue-600 hover:text-blue-800" title="Edit">
+                            ✏️
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeTab === 'enquiries' && (
+          <div className="bg-white rounded-xl shadow-md overflow-x-auto tab-panel">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-navy text-white">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Enquiry No</th>
+                  <th className="px-4 py-3 font-semibold">Student Name</th>
+                  <th className="px-4 py-3 font-semibold">Class</th>
+                  <th className="px-4 py-3 font-semibold">Enquiry Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingEnquiries ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                      Loading enquiries...
+                    </td>
+                  </tr>
+                ) : enquiries.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                      No enquiries yet.
+                    </td>
+                  </tr>
+                ) : (
+                enquiries.map((enquiry, i) => (
+                      <tr
+                        key={enquiry.enquiry_id ?? enquiry.id}
+                        className="border-t border-slate-100 row-in hover:bg-slate-50 transition-colors"
+                        style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                      >
+                      <td className="px-4 py-3">{enquiry.enquiry_id ?? enquiry.id}</td>
+                      <td className="px-4 py-3">{getEnquiryStudentName(enquiry)}</td>
+                      <td className="px-4 py-3">{getClassLabel(enquiry.class_id)}</td>
+                      <td className="px-4 py-3">{enquiry.status ?? enquiry.enquiry_status ?? '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
 
-      {showInquiry && <InquiryModal onClose={() => setShowInquiry(false)} />}
+      {showEnquiry && <EnquiryModal onClose={() => setShowEnquiry(false)} />}
     </div>
   )
 }

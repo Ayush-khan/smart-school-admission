@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import { getEnquiryClasses, getEnquiryGenders, submitInquiry } from '../services/applicationService'
+import { getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 
-function InquiryModal({ onClose }) {
+function EnquiryModal({ onClose }) {
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -24,6 +24,18 @@ function InquiryModal({ onClose }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+    const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 20)
+    return () => clearTimeout(t)
+  }, [])
+
+  const handleClose = () => {
+    setShow(false)
+    setTimeout(onClose, 250)
+  }
 
       useEffect(() => {
     let cancelled = false
@@ -78,7 +90,7 @@ function InquiryModal({ onClose }) {
     setError('')
     setSubmitting(true)
     try {
-        await submitInquiry({
+        await submitEnquiry({
         first_name: firstName.trim(),
         middle_name: middleName.trim(),
         last_name: lastName.trim(),
@@ -96,26 +108,34 @@ function InquiryModal({ onClose }) {
         current_school: currentSchool.trim(),
         message: message.trim(),
       })
-      toast.success('Your inquiry has been submitted. We will get back to you soon.')
-      onClose()
+      toast.success('Your Enquiry has been submitted. We will get back to you soon.')
+      handleClose()
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Could not submit your inquiry.'))
+      toast.error(getErrorMessage(err, 'Could not submit your enquiry.'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-8 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full my-auto">
+     <div
+      className={`fixed inset-0 flex items-center justify-center z-50 px-4 py-8 overflow-y-auto transition-all duration-300 ease-out motion-reduce:transition-none ${
+        show ? 'bg-black/50 backdrop-blur-sm' : 'bg-black/0'
+      }`}
+    >
+      <div
+        className={`bg-white rounded-xl shadow-2xl p-6 max-w-md w-full my-auto transition-all duration-300 ease-out motion-reduce:transition-none ${
+          show ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Admission Inquiry</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">
+          <h2 className="text-lg font-semibold text-slate-800">Admission Enquiry</h2>
+          <button onClick={handleClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">
             ✕
           </button>
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Send us your inquiry and our admission team will get back to you.
+          Send us your enquiry and our admission team will get back to you.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -210,7 +230,7 @@ function InquiryModal({ onClose }) {
               checked={siblingInSchool}
               onChange={(e) => setSiblingInSchool(e.target.checked)}
             />
-            Sibling currently studying at this school?
+            Sibling is currently studying at this school
           </label>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -219,28 +239,28 @@ function InquiryModal({ onClose }) {
               checked={documentsAvailable}
               onChange={(e) => setDocumentsAvailable(e.target.checked)}
             />
-            Are all documents available?
+            All documents are available
           </label>
 
           <div>
-            <label className={labelClass}>Your Question</label>
+            <label className={labelClass}>Describe your query (Optional)</label>
             <textarea
               rows={3}
               className={inputClass}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your question here..."
+              placeholder="Type your query here..."
             />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button
+          <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-blue-900 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-blue-800 disabled:opacity-60"
+            className="w-full bg-navy text-white text-sm font-medium py-2.5 rounded-lg hover:bg-navy-light disabled:opacity-60"
           >
-            {submitting ? 'Submitting...' : 'Submit Inquiry'}
+            {submitting ? 'Submitting...' : 'Submit Enquiry'}
           </button>
         </form>
       </div>
@@ -248,4 +268,4 @@ function InquiryModal({ onClose }) {
   )
 }
 
-export default InquiryModal
+export default EnquiryModal
