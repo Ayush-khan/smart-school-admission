@@ -306,9 +306,12 @@ function Dashboard() {
         </div>
 
         {activeTab === 'applications' && (
-          <div className="bg-white rounded-xl shadow-md overflow-x-auto tab-panel">
+        <div
+            className="bg-white rounded-xl shadow-md overflow-auto table-scroll tab-panel"
+            style={{ maxHeight: 'max(16rem, calc(100dvh - 24rem))' }}
+          >
             <table className="w-full text-sm text-left">
-              <thead className="bg-navy text-white">
+              <thead className="bg-navy text-white sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Form No</th>
                   <th className="px-4 py-3 font-semibold">Full Name</th>
@@ -373,9 +376,12 @@ function Dashboard() {
         )}
 
         {activeTab === 'enquiries' && (
-          <div className="bg-white rounded-xl shadow-md overflow-x-auto tab-panel">
+         <div
+            className="bg-white rounded-xl shadow-md overflow-auto table-scroll tab-panel"
+            style={{ maxHeight: 'max(16rem, calc(100dvh - 24rem))' }}
+          >
             <table className="w-full text-sm text-left">
-              <thead className="bg-navy text-white">
+              <thead className="bg-navy text-white sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Enquiry No</th>
                   <th className="px-4 py-3 font-semibold">Student Name</th>

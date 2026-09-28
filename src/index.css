@@ -147,6 +147,15 @@
   }
 }
 
+/* Table scrollbar */
+.table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #B8923F #E9EEF5;
+}
+.table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-scroll::-webkit-scrollbar-track { background: #E9EEF5; }
+.table-scroll::-webkit-scrollbar-thumb { background: #B8923F; border-radius: 9999px; }
+
 
 /* :root {
   --text: #6b6375;

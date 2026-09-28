@@ -266,7 +266,7 @@ function Login() {
                   placeholder="Enter your full name"
                 />
                 {nameLocked && (
-                  <p className="text-xs text-white/90 mt-1">Existing account found. Name is filled from your registration.</p>
+                  <p className="text-xs text-white/90 mt-1">Account already exists.</p>
                 )}
                 {fullNameError && <p className="text-sm text-red-200 font-medium mt-1">{fullNameError}</p>}
               </div>
