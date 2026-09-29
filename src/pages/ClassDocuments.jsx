@@ -28,10 +28,12 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
       alert('Only PDF, JPG, JPEG, or PNG files are allowed.')
       return
     }
+
     if (selected.size > MAX_FILE_SIZE_BYTES) {
       alert(`File size must be under ${MAX_FILE_SIZE_KB} KB. Please compress your file and try again.`)
       return
     }
+
     onUpload(doc.code, selected)
   }
 
@@ -40,11 +42,16 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
       <div className="flex items-start justify-between mb-2">
         <div>
           <p className="text-sm font-semibold text-slate-800">{doc.name}</p>
-          <p className="text-xs text-slate-500">Accepted: PDF, JPG, JPEG, PNG · Max {MAX_FILE_SIZE_KB} KB</p>
+          <p className="text-xs text-slate-500">
+            Accepted: PDF, JPG, JPEG, PNG · Max {MAX_FILE_SIZE_KB} KB
+          </p>
         </div>
+
         <span
           className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
-            doc.required ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
+            doc.required
+              ? 'bg-red-100 text-red-700'
+              : 'bg-slate-100 text-slate-600'
           }`}
         >
           {doc.required ? 'Required' : 'Optional'}
@@ -57,22 +64,47 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
           className="mt-2 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg py-4 text-sm text-slate-500 cursor-pointer hover:border-blue-400 hover:text-blue-600"
         >
           📤 Click to upload
-          <input id={inputId} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleChange} />
+
+          <input
+            id={inputId}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="hidden"
+            onChange={handleChange}
+          />
         </label>
       ) : (
         <div className="mt-2 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
           <div className="flex items-center gap-2 overflow-hidden">
             <span className="text-green-700">✓</span>
+
             <div className="overflow-hidden">
-              <p className="text-xs font-medium text-slate-800 truncate">{file.name}</p>
-              <p className="text-xs text-slate-500">{formatSize(file.size)} · Uploaded</p>
+              <p className="text-xs font-medium text-slate-800 truncate">
+                {file.name}
+              </p>
+
+              <p className="text-xs text-slate-500">
+                {formatSize(file.size)} · Uploaded
+              </p>
             </div>
           </div>
+
           <div className="flex items-center gap-3 flex-shrink-0">
-            <label htmlFor={inputId} className="text-xs text-blue-700 font-medium hover:underline cursor-pointer">
+            <label
+              htmlFor={inputId}
+              className="text-xs text-blue-700 font-medium hover:underline cursor-pointer"
+            >
               Replace
-              <input id={inputId} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleChange} />
+
+              <input
+                id={inputId}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={handleChange}
+              />
             </label>
+
             <button
               type="button"
               onClick={() => onRemove(doc.code)}
@@ -97,33 +129,74 @@ function ClassDocuments() {
 
   useEffect(() => {
     let cancelled = false
+
     async function loadDocumentTypes() {
       try {
         const result = await getDocumentTypes()
-        const list = result?.data?.document_types ?? []
-        // ASSUMPTION: only `code` and `name` are confirmed from backend.
-        // `required` isn't documented — defaulting to false until confirmed;
-        // adjust the mapping below once the real field name (if any) is known.
+
+        /*
+         * Backend now returns:
+         *
+         * data.required_documents
+         * data.optional_documents
+         *
+         * Combine both arrays so that all documents
+         * are displayed on the admission form.
+         */
+
+        const requiredDocuments =
+          result?.data?.required_documents ?? []
+
+        const optionalDocuments =
+          result?.data?.optional_documents ?? []
+
+        const list = [
+          ...requiredDocuments,
+          ...optionalDocuments
+        ]
+
+        /*
+         * Convert backend is_required value:
+         *
+         * Y = Required
+         * N = Optional
+         */
+
         const mapped = list.map((d) => ({
           code: d.code,
           name: d.name,
-          required: d.required ?? d.is_required ?? false,
+          required:
+            String(d.is_required).toUpperCase() === 'Y',
         }))
+
         if (!cancelled) setDocumentList(mapped)
       } catch (err) {
-        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load document types.'))
+        if (!cancelled) {
+          toast.error(
+            getErrorMessage(
+              err,
+              'Could not load document types.'
+            )
+          )
+        }
       } finally {
         if (!cancelled) setLoadingDocTypes(false)
       }
     }
+
     loadDocumentTypes()
+
     return () => {
       cancelled = true
     }
   }, [])
 
   const handleUpload = (code, file) => {
-    setFiles((prev) => ({ ...prev, [code]: file }))
+    setFiles((prev) => ({
+      ...prev,
+      [code]: file
+    }))
+
     toast.success(`${file.name} uploaded`)
   }
 
@@ -135,37 +208,72 @@ function ClassDocuments() {
     })
   }
 
-  const requiredDocs = documentList.filter((d) => d.required)
-  const missingRequired = requiredDocs.filter((d) => !files[d.code])
+  const requiredDocs = documentList.filter(
+    (d) => d.required
+  )
+
+  const missingRequired = requiredDocs.filter(
+    (d) => !files[d.code]
+  )
 
   const handleContinue = () => {
     if (missingRequired.length > 0) {
-      alert(`Please upload: ${missingRequired.map((d) => d.name).join(', ')}`)
+      alert(
+        `Please upload: ${missingRequired
+          .map((d) => d.name)
+          .join(', ')}`
+      )
       return
     }
+
     const fileMeta = Object.fromEntries(
-      Object.entries(files).map(([code, file]) => [code, { name: file.name, size: file.size }])
+      Object.entries(files).map(
+        ([code, file]) => [
+          code,
+          {
+            name: file.name,
+            size: file.size
+          }
+        ]
+      )
     )
-    saveApplicationSection(classId, 'documents', fileMeta)
-    toast.success('Documents uploaded successfully')
-    navigate(`/class/${classId}/application/review`)
+
+    saveApplicationSection(
+      classId,
+      'documents',
+      fileMeta
+    )
+
+    toast.success(
+      'Documents uploaded successfully'
+    )
+
+    navigate(
+      `/class/${classId}/application/review`
+    )
   }
 
   return (
     <ClassLayout>
       <ApplicationStepperLayout currentStep={7}>
         <div className="bg-white rounded-xl shadow-sm p-6">
+
           <h2 className="text-center text-teal-700 font-semibold mb-1 border-b border-slate-200 pb-3">
             📄 Document Upload
           </h2>
+
           <p className="text-sm text-slate-500 text-center mt-3 mb-6">
             Upload clear scanned copies or photos of the following documents.
           </p>
 
           {loadingDocTypes ? (
-            <p className="text-sm text-slate-500 text-center py-6">Loading document types...</p>
+            <p className="text-sm text-slate-500 text-center py-6">
+              Loading document types...
+            </p>
           ) : documentList.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-6">No document types configured.</p>
+            <p className="text-sm text-slate-500 text-center py-6">
+              No document types configured.
+            </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {documentList.map((doc) => (
@@ -192,6 +300,7 @@ function ClassDocuments() {
                 Click here to compress your PDF
               </a>
             </p>
+
             <p>
               Please ensure that your image file is less than {MAX_FILE_SIZE_KB}kb.{' '}
               <a
@@ -206,13 +315,19 @@ function ClassDocuments() {
           </div>
 
           <div className="flex justify-between gap-3 pt-6 mt-6 border-t border-slate-200">
+
             <button
               type="button"
-              onClick={() => navigate(`/class/${classId}/application/additional`)}
+              onClick={() =>
+                navigate(
+                  `/class/${classId}/application/additional`
+                )
+              }
               className="bg-slate-100 text-slate-700 text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-slate-200"
             >
               Previous
             </button>
+
             <button
               type="button"
               onClick={handleContinue}
@@ -220,7 +335,9 @@ function ClassDocuments() {
             >
               Save & Continue
             </button>
+
           </div>
+
         </div>
       </ApplicationStepperLayout>
     </ClassLayout>

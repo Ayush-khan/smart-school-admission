@@ -202,7 +202,7 @@ function Dashboard() {
       <main className="max-w-5xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Apply for New Admission card */}
-           <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-xl p-6 text-white relative border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/50 hover:ring-2 hover:ring-brass" ref={dropdownRef}>
+           <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-xl p-6 text-white relative z-30 border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/50 hover:ring-2 hover:ring-brass" ref={dropdownRef}>
             <h2 className="text-lg font-semibold mb-4 text-center tracking-tight">Apply For New Admission</h2>
 
                       <button
