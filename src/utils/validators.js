@@ -1,7 +1,8 @@
 // Letters (any language) and spaces only. No digits or special characters.
 const NAME_REGEX = /^[\p{L}\p{M}\s]+$/u
 
-export const nameRules = (required = false) => ({
+// label -> message becomes "Enter a valid <label>."
+export const nameRules = (label, required = false) => ({
   ...(required ? { required: 'Required' } : {}),
-  pattern: { value: NAME_REGEX, message: 'Invalid characters.' },
+  pattern: { value: NAME_REGEX, message: `Enter a valid ${label}.` },
 })

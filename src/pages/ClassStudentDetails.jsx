@@ -84,17 +84,17 @@ function ClassStudentDetails() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className={labelClass}>{reqStar} First Name</label>
-                <input className={inputClass} {...register('firstName', nameRules(true))} />
+                <input className={inputClass} {...register('firstName', nameRules('first name', true))} />
                 {errors.firstName && <p className={errClass}>{errors.firstName.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>Middle Name</label>
-                <input className={inputClass} {...register('middleName', nameRules())} />
+                <input className={inputClass} {...register('middleName', nameRules('middle name'))} />
                 {errors.middleName && <p className={errClass}>{errors.middleName.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Last Name</label>
-                <input className={inputClass} {...register('lastName', nameRules(true))} />
+                <input className={inputClass} {...register('lastName', nameRules('last name', true))} />
                 {errors.lastName && <p className={errClass}>{errors.lastName.message}</p>}
               </div>
               <div>
@@ -114,7 +114,7 @@ function ClassStudentDetails() {
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Mother Tongue</label>
-                <input className={inputClass} {...register('motherTongue', nameRules(true))} />
+                <input className={inputClass} {...register('motherTongue', nameRules('mother tongue', true))} />
                 {errors.motherTongue && <p className={errClass}>{errors.motherTongue.message}</p>}
               </div>
               <div>

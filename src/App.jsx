@@ -1,14 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import AddressDetails from './pages/AddressDetails'
 import Login from './pages/Login'
 import VerifyOtp from './pages/VerifyOtp'
 import Dashboard from './pages/Dashboard'
 import ClassInstructions from './pages/ClassInstructions'
 import ClassStudentDetails from './pages/ClassStudentDetails'
-import ApplicationStatus from './pages/ApplicationStatus'
-import StudentDetails from './pages/StudentDetails'
-import ParentDetails from './pages/ParentDetails'
 import ClassAddressDetails from './pages/ClassAddressDetails'
 import ClassParentDetails from './pages/ClassParentDetails'
 import ClassSiblingDetails from './pages/ClassSiblingDetails'
@@ -33,10 +29,6 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/verify-otp" element={<VerifyOtp />} />
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/application/student" element={<StudentDetails />} />
-      <Route path="/application/status" element={<ApplicationStatus />} />
-      <Route path="/application/address" element={<AddressDetails />} />
-      <Route path="/application/parents" element={<ParentDetails />} />
       <Route path="/class/:classId/instructions" element={<ClassInstructions />} />
       <Route path="/class/:classId/application/student" element={<ClassStudentDetails />} />
       <Route path="/class/:classId/application/address" element={<ClassAddressDetails />} />

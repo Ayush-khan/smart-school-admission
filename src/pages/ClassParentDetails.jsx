@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
+import { nameRules } from '../utils/validators'
 
 function ClassParentDetails() {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ function ClassParentDetails() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({ defaultValues: savedData.parents || {} })
+  } = useForm({ defaultValues: savedData.parents || {}, mode: 'onChange' })
 
     const onSubmit = (data) => {
     saveApplicationSection(classId, 'parents', data)
@@ -41,7 +42,7 @@ function ClassParentDetails() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className={labelClass}>{reqStar} Father's Name</label>
-                <input className={inputClass} {...register('fatherName', { required: 'Required' })} />
+                <input className={inputClass} {...register('fatherName', nameRules("father's name", true))} />
                 {errors.fatherName && <p className={errClass}>{errors.fatherName.message}</p>}
               </div>
               <div>
@@ -81,7 +82,7 @@ function ClassParentDetails() {
 
               <div>
                 <label className={labelClass}>{reqStar} Mother's Name</label>
-                <input className={inputClass} {...register('motherName', { required: 'Required' })} />
+                <input className={inputClass} {...register('motherName', nameRules("mother's name", true))} />
                 {errors.motherName && <p className={errClass}>{errors.motherName.message}</p>}
               </div>
               <div>

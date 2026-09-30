@@ -207,6 +207,7 @@ function Login() {
               <button
                 type="button"
                 onClick={() => {
+                  if (mode !== 'mobile') setContact('')
                   resetExistingUser()
                   setMode('mobile')
                   setContactError('')
@@ -221,6 +222,7 @@ function Login() {
               <button
                 type="button"
                 onClick={() => {
+                  if (mode !== 'email') setContact('')
                   resetExistingUser()
                   setMode('email')
                   setContactError('')
