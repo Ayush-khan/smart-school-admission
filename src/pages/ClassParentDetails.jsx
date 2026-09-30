@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-import { nameRules } from '../utils/validators'
+import { nameRules, occupationRules, mobileRules } from '../utils/validators'
 
 function ClassParentDetails() {
   const navigate = useNavigate()
@@ -62,10 +62,7 @@ function ClassParentDetails() {
                   <span className="text-sm text-slate-500">+91</span>
                   <input
                     className={inputClass}
-                    {...register('fatherMobile', {
-                      required: 'Required',
-                      pattern: { value: /^\d{10}$/, message: '10 digits' },
-                    })}
+                    {...register('fatherMobile', mobileRules(true))}
                   />
                 </div>
                 {errors.fatherMobile && <p className={errClass}>{errors.fatherMobile.message}</p>}
@@ -76,7 +73,7 @@ function ClassParentDetails() {
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Father Occupation</label>
-                <input className={inputClass} {...register('fatherOccupation', { required: 'Required' })} />
+                <input className={inputClass} {...register('fatherOccupation', occupationRules('father occupation', true))} />
                 {errors.fatherOccupation && <p className={errClass}>{errors.fatherOccupation.message}</p>}
               </div>
 
@@ -102,10 +99,7 @@ function ClassParentDetails() {
                   <span className="text-sm text-slate-500">+91</span>
                   <input
                     className={inputClass}
-                    {...register('motherMobile', {
-                      required: 'Required',
-                      pattern: { value: /^\d{10}$/, message: '10 digits' },
-                    })}
+                    {...register('motherMobile', mobileRules(true))}
                   />
                 </div>
                 {errors.motherMobile && <p className={errClass}>{errors.motherMobile.message}</p>}
@@ -117,7 +111,7 @@ function ClassParentDetails() {
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Mother Occupation</label>
-                <input className={inputClass} {...register('motherOccupation', { required: 'Required' })} />
+                <input className={inputClass} {...register('motherOccupation', occupationRules('mother occupation', true))} />
                 {errors.motherOccupation && <p className={errClass}>{errors.motherOccupation.message}</p>}
               </div>
 

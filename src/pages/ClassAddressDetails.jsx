@@ -5,6 +5,7 @@ import { useState } from 'react'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
+import { nameRules, addressRules, pincodeRules } from '../utils/validators'
 
 function ClassAddressDetails() {
   const navigate = useNavigate()
@@ -19,7 +20,7 @@ function ClassAddressDetails() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm({ defaultValues: savedData.address || {} })
+  } = useForm({ defaultValues: savedData.address || {}, mode: 'onChange' })
 
   const presentAddress = watch('presentAddress')
 
@@ -60,18 +61,18 @@ function ClassAddressDetails() {
                   rows={2}
                   placeholder="Plot No. / Street name"
                   className={inputClass}
-                  {...register('presentAddress', { required: 'Required' })}
+                  {...register('presentAddress', addressRules('present address', true))}
                 />
                 {errors.presentAddress && <p className={errClass}>{errors.presentAddress.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} City</label>
-                <input className={inputClass} {...register('presentCity', { required: 'Required' })} />
+                <input className={inputClass} {...register('presentCity', nameRules('city', true))} />
                 {errors.presentCity && <p className={errClass}>{errors.presentCity.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} State</label>
-                <input className={inputClass} {...register('presentState', { required: 'Required' })} />
+                <input className={inputClass} {...register('presentState', nameRules('state', true))} />
                 {errors.presentState && <p className={errClass}>{errors.presentState.message}</p>}
               </div>
 
@@ -79,10 +80,7 @@ function ClassAddressDetails() {
                 <label className={labelClass}>{reqStar} Pincode</label>
                 <input
                   className={inputClass}
-                  {...register('presentPincode', {
-                    required: 'Required',
-                    pattern: { value: /^\d{6}$/, message: '6-digit pincode' },
-                  })}
+                  {...register('presentPincode', pincodeRules(true))}
                 />
                 {errors.presentPincode && <p className={errClass}>{errors.presentPincode.message}</p>}
               </div>
@@ -92,13 +90,14 @@ function ClassAddressDetails() {
                   rows={2}
                   disabled={sameAsPresent}
                   className={sameAsPresent ? disabledInputClass : inputClass}
-                  {...register('permanentAddress', { required: 'Required' })}
+                  {...register('permanentAddress', addressRules('permanent address', true))}
                 />
                 {errors.permanentAddress && <p className={errClass}>{errors.permanentAddress.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Nationality</label>
-                <input className={inputClass} defaultValue="INDIAN" {...register('nationality', { required: true })} />
+                <input className={inputClass} defaultValue="INDIAN" {...register('nationality', nameRules('nationality', true))} />
+                {errors.nationality && <p className={errClass}>{errors.nationality.message}</p>}
               </div>
             </div>
 

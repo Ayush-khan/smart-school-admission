@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import CustomSelect from '../components/CustomSelect'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-import { nameRules } from '../utils/validators'
+import { nameRules, dobRules, todayISO, DOB_MIN_YEAR } from '../utils/validators'
 
 function ClassStudentDetails() {
   const navigate = useNavigate()
@@ -104,12 +104,12 @@ function ClassStudentDetails() {
 
               <div>
                 <label className={labelClass}>{reqStar} Date of Birth</label>
-                <input type="date" className={inputClass} {...register('dob', { required: 'Required' })} />
+                <input type="date" min={`${DOB_MIN_YEAR}-01-01`} max={todayISO()} className={inputClass} {...register('dob', dobRules)} />
                 {errors.dob && <p className={errClass}>{errors.dob.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Birth Place</label>
-                <input className={inputClass} {...register('birthPlace', { required: 'Required' })} />
+                <input className={inputClass} {...register('birthPlace', nameRules('birth place', true))} />
                 {errors.birthPlace && <p className={errClass}>{errors.birthPlace.message}</p>}
               </div>
               <div>
