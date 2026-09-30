@@ -32,8 +32,8 @@ function ClassLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-page">
-      <header className="bg-navy sticky top-0 z-40">
+    <div className="min-h-screen bg-page print:bg-white print:min-h-0">
+      <header className="bg-navy sticky top-0 z-40 print:hidden">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3">
             <img
@@ -66,7 +66,7 @@ function ClassLayout({ children }) {
         </div>
       </header>
 
-  <div className="bg-gradient-to-r from-navy-light to-navy py-2 sticky top-[52px] sm:top-[52px] z-30 border-t border-white/10">
+  <div className="bg-gradient-to-r from-navy-light to-navy py-2 sticky top-[52px] sm:top-[52px] z-30 border-t border-white/10 print:hidden">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 flex gap-2 overflow-x-auto">
           {tabs.map((tab) => {
             const isActive = location.pathname === tab.path
@@ -91,7 +91,7 @@ function ClassLayout({ children }) {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-5xl mx-auto px-4 py-8 print:max-w-none print:p-[15mm]">{children}</main>
     </div>
   )
 }

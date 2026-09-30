@@ -156,6 +156,10 @@
 .table-scroll::-webkit-scrollbar-track { background: #E9EEF5; }
 .table-scroll::-webkit-scrollbar-thumb { background: #B8923F; border-radius: 9999px; }
 
+@media print {
+  @page { size: A4; margin: 0; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 
 /* :root {
   --text: #6b6375;
@@ -268,3 +272,4 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 } */
+ 

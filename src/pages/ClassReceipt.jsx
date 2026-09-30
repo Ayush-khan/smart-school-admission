@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import jsPDF from 'jspdf'
+import toast from 'react-hot-toast'
 import { toPng } from 'html-to-image'
 import { getApplicationData } from '../utils/applicationData'
 import { getFormId } from '../utils/formId'
@@ -14,6 +15,7 @@ function ClassReceipt() {
   const navigate = useNavigate()
   const { classId } = useParams()
   const receiptRef = useRef(null)
+  const [downloading, setDownloading] = useState(false)
   const [classData, setClassData] = useState(null)
   const [loadingClass, setLoadingClass] = useState(true)
   const appData = getApplicationData(classId)
@@ -62,26 +64,47 @@ function ClassReceipt() {
   if (loadingClass) return <ClassLayout><p className="text-center text-slate-500 py-10">Loading class details...</p></ClassLayout>
   if (!classData) return <ClassLayout><p className="text-center text-slate-600 py-10">Class not found.</p></ClassLayout>
 
-    const handlePrint = () => {
+  // Print: the header, tabs and buttons are hidden with print: classes,
+  // so only the receipt is printed (see ClassLayout + index.css).
+  const handlePrint = () => {
     window.print()
   }
 
-    const handleDownload = async () => {
+  // Download: captures only the receipt block (no buttons) and places it on an A4 page.
+  const handleDownload = async () => {
     const element = receiptRef.current
-    const imgData = await toPng(element, { pixelRatio: 2, backgroundColor: '#ffffff' })
+    if (!element || downloading) return
+    setDownloading(true)
+    try {
+      const options = { pixelRatio: 3, backgroundColor: '#ffffff', cacheBust: true }
+      // First call warms up fonts/images; on some mobile browsers the first capture comes out blank.
+      await toPng(element, options)
+      const imgData = await toPng(element, options)
 
-    const img = new Image()
-    img.src = imgData
-    await new Promise((resolve) => { img.onload = resolve })
-
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [img.width, img.height] })
-    pdf.addImage(imgData, 'PNG', 0, 0, img.width, img.height)
-    pdf.save(`Receipt-${receiptNumber}.pdf`)
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const margin = 15
+      const maxWidth = pdf.internal.pageSize.getWidth() - margin * 2
+      const maxHeight = pdf.internal.pageSize.getHeight() - margin * 2
+      const ratio = element.offsetHeight / element.offsetWidth
+      let width = maxWidth
+      let height = width * ratio
+      if (height > maxHeight) {
+        height = maxHeight
+        width = height / ratio
+      }
+      pdf.addImage(imgData, 'PNG', (pdf.internal.pageSize.getWidth() - width) / 2, margin, width, height)
+      pdf.save(`Receipt-${receiptNumber}.pdf`)
+    } catch {
+      toast.error('Could not download the receipt. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   return (
     <ClassLayout>
-            <div ref={receiptRef} className="bg-white rounded-xl shadow-sm p-8 max-w-xl mx-auto">
+      <div className="bg-white rounded-xl shadow-sm p-5 sm:p-8 max-w-xl mx-auto print:shadow-none print:p-0 print:max-w-none">
+        <div ref={receiptRef} className="bg-white">
         <div className="text-center mb-6 pb-6 border-b border-slate-200">
          <img src={logo} alt="Evolvu Smart School logo" className="w-14 h-14 bg-white rounded-full object-contain p-1 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-navy">Evolvu Smart School</h2>
@@ -123,12 +146,14 @@ function ClassReceipt() {
           </div>
         </div>
 
-        <div className="bg-slate-50 rounded-lg p-4 flex justify-between items-center mb-8">
+        <div className="bg-slate-50 rounded-lg p-4 flex justify-between items-center">
           <span className="text-sm font-medium text-slate-700">Amount Paid</span>
           <span className="text-lg font-bold text-navy">Rs. {amount.toLocaleString()}/-</span>
         </div>
+        </div>
 
-                    <div className="text-center mb-4">
+        <div className="print:hidden">
+        <div className="text-center mt-8 mb-4">
           <button
             onClick={() => navigate(`/class/${classId}/application/confirmation`)}
             className="text-sm text-blue-700 font-medium hover:underline"
@@ -140,9 +165,10 @@ function ClassReceipt() {
          <div className="flex flex-col sm:flex-row justify-center gap-3">
           <button
             onClick={handleDownload}
-            className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
+            disabled={downloading}
+            className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light disabled:opacity-60"
           >
-            ⬇️ Download Receipt
+            {downloading ? 'Preparing...' : '⬇️ Download Receipt'}
           </button>
           <button
             onClick={handlePrint}
@@ -162,6 +188,7 @@ function ClassReceipt() {
           >
             Back to Dashboard
           </button>
+        </div>
         </div>
       </div>
     </ClassLayout>

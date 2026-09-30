@@ -297,7 +297,7 @@ function Login() {
             <h2 className="text-xl font-bold text-slate-900 mb-3">Instructions</h2>
             <ul className="list-disc list-outside pl-5 space-y-3 text-sm text-slate-700">
               <li>The OTP you receive during your first login will become your password.</li>
-              <li>Please keep this OTP safe for future logins.</li>
+              <li>Please keep this OTP safe for future use.</li>
               <li>Every time you log in, you can use this first OTP as your password.</li>
               <li>If you forget your password, you can click "Resend OTP" to receive a new OTP.</li>
             </ul>
