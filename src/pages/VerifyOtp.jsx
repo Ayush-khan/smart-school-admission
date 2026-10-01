@@ -5,7 +5,7 @@ import logo from '../assets/evolvu-logo.webp'
 import loginVideo from '../assets/Login_video_Students.mp4'
 import { verifyOtp, resendOtp } from '../services/authService'
 import { getErrorMessage } from '../services/apiHelpers'
-import { getSessionInfo, saveSessionInfo } from '../utils/session'
+import { getSessionInfo, saveSessionInfo, startResendCooldown, getResendRemaining } from '../utils/session'
 
 function VerifyOtp() {
   const navigate = useNavigate()
@@ -20,9 +20,7 @@ function VerifyOtp() {
 
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
-  // Countdown only starts when arriving via "Resend OTP" on the login page;
-  // from "Use OTP / Password" the Resend OTP button is available immediately.
-  const [timer, setTimer] = useState(location.state?.justResent ? 30 : 0)
+  const [timer, setTimer] = useState(() => (location.state?.justResent ? getResendRemaining(contact) || 30 : 30))
   const [today, setToday] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)
@@ -83,6 +81,7 @@ function VerifyOtp() {
     try {
       await resendOtp({ narId, mode, contact })
       saveSessionInfo({ narId, mode, contact })
+      startResendCooldown(contact)
       setTimer(30)
       setOtp('')
       setJustResent(true)

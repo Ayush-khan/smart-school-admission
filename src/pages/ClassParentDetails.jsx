@@ -51,7 +51,7 @@ function ClassParentDetails() {
                   className={inputClass}
                   {...register('fatherEmail', {
                     required: 'Required',
-                    pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email' },
+                    pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
                   })}
                 />
                 {errors.fatherEmail && <p className={errClass}>{errors.fatherEmail.message}</p>}
@@ -88,7 +88,7 @@ function ClassParentDetails() {
                   className={inputClass}
                   {...register('motherEmail', {
                     required: 'Required',
-                    pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email' },
+                    pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
                   })}
                 />
                 {errors.motherEmail && <p className={errClass}>{errors.motherEmail.message}</p>}
@@ -115,21 +115,59 @@ function ClassParentDetails() {
                 {errors.motherOccupation && <p className={errClass}>{errors.motherOccupation.message}</p>}
               </div>
 
-              <div>
+                            <div>
                 <label className={labelClass}>Mother Aadhaar Card No.</label>
-                <input className={inputClass} {...register('motherAadhaar')} />
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  maxLength={12}
+                  {...register('motherAadhaar', {
+                    pattern: { value: /^\d{12}$/, message: 'Aadhaar must be exactly 12 digits' },
+                    onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
+                  })}
+                />
+                {errors.motherAadhaar && <p className={errClass}>{errors.motherAadhaar.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>Father Aadhaar Card No.</label>
-                <input className={inputClass} {...register('fatherAadhaar')} />
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  maxLength={12}
+                  {...register('fatherAadhaar', {
+                    pattern: { value: /^\d{12}$/, message: 'Aadhaar must be exactly 12 digits' },
+                    onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
+                  })}
+                />
+                {errors.fatherAadhaar && <p className={errClass}>{errors.fatherAadhaar.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>Mother Qualification</label>
-                <input className={inputClass} {...register('motherQualification')} />
+                <input
+                  className={inputClass}
+                  maxLength={50}
+                  {...register('motherQualification', {
+                    pattern: {
+                    value: /^(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
+                    message: 'Only letters, numbers, spaces and . & - are allowed',
+                    },
+                  })}
+                />
+                {errors.motherQualification && <p className={errClass}>{errors.motherQualification.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>Father Qualification</label>
-                <input className={inputClass} {...register('fatherQualification')} />
+                <input
+                  className={inputClass}
+                  maxLength={50}
+                  {...register('fatherQualification', {
+                    pattern: {
+                    value: /^(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
+                      message: 'Only letters, numbers, spaces and . & - are allowed',
+                    },
+                  })}
+                />
+                {errors.fatherQualification && <p className={errClass}>{errors.fatherQualification.message}</p>}
               </div>
 
               <div className="sm:col-span-2">

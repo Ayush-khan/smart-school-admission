@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import logo from '../assets/evolvu-logo.webp'
-import { checkExistingUser, createRegistration, resendOtp } from '../services/authService'
+import { checkExistingUser, createRegistration, resendOtp, sendOtp } from '../services/authService'
 import { getErrorMessage } from '../services/apiHelpers'
-import { saveSessionInfo } from '../utils/session'
+import { saveSessionInfo, startResendCooldown, getResendRemaining } from '../utils/session'
 import loginVideo from '../assets/Login_video_Students.mp4'
 
 function Login() {
@@ -16,6 +16,7 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const [nameLocked, setNameLocked] = useState(false)
   const [existingNarId, setExistingNarId] = useState(null)
+  const [resendTimer, setResendTimer] = useState(0)
   const navigate = useNavigate()
   const [today, setToday] = useState('')
 
@@ -23,7 +24,19 @@ function Login() {
     setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
   }, [])
 
-  // Clears the auto-filled name when the contact changes
+  // Resend OTP countdown: re-sync whenever the contact changes
+  // (e.g. coming back from the Verify OTP screen), then tick every second.
+  useEffect(() => {
+    setResendTimer(getResendRemaining(contact))
+  }, [contact])
+
+  useEffect(() => {
+    if (resendTimer <= 0) return
+    const id = setTimeout(() => setResendTimer((t) => t - 1), 1000)
+    return () => clearTimeout(id)
+  }, [resendTimer])
+
+  // Clears the auto-filled name when the contact or mode changes
   const resetExistingUser = () => {
     if (nameLocked) setFullName('')
     setNameLocked(false)
@@ -136,19 +149,32 @@ function Login() {
 
   // "Resend OTP" — explicitly requests a brand-new OTP.
   const submitResendOtp = async () => {
+    if (resendTimer > 0) return
     if (!validate()) return
     setLoading(true)
     setContactError('')
     setFullNameError('')
     try {
+      const isNewUser = !existingNarId
       const narId = await lookupNarId()
       if (!narId) return
       try {
         await resendOtp({ narId, mode, contact })
       } catch (otpErr) {
-        setContactError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
-        return
+        // A brand-new user may have no OTP to "resend" yet, so fall back to a first send.
+        if (!isNewUser) {
+          setContactError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
+          return
+        }
+        try {
+          await sendOtp({ narId, mode, contact })
+        } catch (sendErr) {
+          setContactError(getErrorMessage(sendErr, 'Could not send OTP. Please try again.'))
+          return
+        }
       }
+      startResendCooldown(contact)
+      setResendTimer(getResendRemaining(contact))
       toast.success(mode === 'mobile' ? 'New OTP sent to your mobile number' : 'New OTP sent to your email')
       navigate('/verify-otp', { state: { contact, mode, narId, justResent: true } })
     } catch (err) {
@@ -210,8 +236,8 @@ function Login() {
                   if (mode !== 'mobile') {
                     setContact('')
                     setFullName('')
-                    resetExistingUser()
                   }
+                  resetExistingUser()
                   setMode('mobile')
                   setContactError('')
                   setFullNameError('')
@@ -228,8 +254,8 @@ function Login() {
                   if (mode !== 'email') {
                     setContact('')
                     setFullName('')
-                    resetExistingUser()
                   }
+                  resetExistingUser()
                   setMode('email')
                   setContactError('')
                   setFullNameError('')
@@ -295,10 +321,12 @@ function Login() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={loading}
+              disabled={loading || resendTimer > 0}
               className="w-full mt-3 bg-blue-600 disabled:opacity-60 text-white font-semibold py-2.5 rounded-full btn-sweep [--sweep-color:#fff] [--sweep-text:#2563eb]"
             >
-              Resend OTP to {mode === 'mobile' ? 'mobile number' : 'your email ID'}
+              {resendTimer > 0
+                ? `Resend OTP in ${resendTimer}s`
+                : `Resend OTP to ${mode === 'mobile' ? 'mobile number' : 'your email ID'}`}
             </button>
           </div>
 
