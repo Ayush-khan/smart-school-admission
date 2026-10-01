@@ -19,7 +19,7 @@ function ClassAcademicDetails() {
     },
   })
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'records' })
+  const { fields, remove } = useFieldArray({ control, name: 'records' })
 
   const inputClass =
     'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -94,15 +94,6 @@ function ClassAcademicDetails() {
                   </div>
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={() =>
-                  append({ schoolName: '', board: '', previousClass: '', academicYear: '', percentage: '', tcStatus: '' })
-                }
-                className="text-sm text-blue-700 font-medium hover:underline"
-              >
-                + Add Academic Record
-              </button>
             </div>
 
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">

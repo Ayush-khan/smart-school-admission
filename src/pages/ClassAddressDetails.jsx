@@ -130,7 +130,7 @@ function ClassAddressDetails() {
               </button>
             </div>
           </form>
-        </div>
+        </div>claud
       </ApplicationStepperLayout>
     </ClassLayout>
   )

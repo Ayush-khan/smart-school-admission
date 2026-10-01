@@ -248,7 +248,9 @@ function Login() {
                     setContact(e.target.value)
                     resetExistingUser()
                   }}
-                  className="w-full bg-white/70 border-none rounded-lg px-4 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className={`w-full bg-white/70 rounded-lg px-4 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                    contactError ? 'border-2 border-red-500' : 'border-none'
+                  }`}
                   placeholder={mode === 'mobile' ? '10-digit mobile number' : 'you@example.com'}
                 />
                 {contactError && <p className="text-sm text-red-200 font-medium mt-1">{contactError}</p>}
@@ -262,7 +264,9 @@ function Login() {
                   onChange={(e) => setFullName(e.target.value)}
                   readOnly={nameLocked}
                   maxLength={100}
-                  className={`w-full border-none rounded-lg px-4 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                  className={`w-full rounded-lg px-4 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                    fullNameError ? 'border-2 border-red-500' : 'border-none'
+                  } ${
                     nameLocked ? 'bg-white/40 text-slate-700 cursor-not-allowed' : 'bg-white/70'
                   }`}
                   placeholder="Enter your full name"
@@ -297,7 +301,7 @@ function Login() {
             <h2 className="text-xl font-bold text-slate-900 mb-3">Instructions</h2>
             <ul className="list-disc list-outside pl-5 space-y-3 text-sm text-slate-700">
               <li>The OTP you receive during your first login will become your password.</li>
-              <li>Please keep this OTP safe for future use.</li>
+              <li>Please keep this OTP safe for future logins.</li>
               <li>Every time you log in, you can use this first OTP as your password.</li>
               <li>If you forget your password, you can click "Resend OTP" to receive a new OTP.</li>
             </ul>

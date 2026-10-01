@@ -6,6 +6,8 @@ import ClassLayout from '../layouts/ClassLayout'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { getDocumentTypes } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
+import { getFormId } from '../utils/formId'
+import { uploadDocument, getDocuments, deleteDocument } from '../services/documentService'
 
 const MAX_FILE_SIZE_KB = 220
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024
@@ -16,7 +18,31 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
+const isYes = (v) => v === true || v === 1 || ['Y', 'YES', 'TRUE', '1'].includes(String(v).toUpperCase())
+
+// Turns the GET documents response into { [docCode]: { name, size, url } }.
+// Uses data.documents — each item looks like:
+// { doc_type: "BC", image_name: "...pdf", document_type: "Birth Certificate", uploaded: true, document_url: "https://..." }
+// NOTE: doc_type is the code. document_type is the display NAME, so it must not be used as the code.
+function normalizeSavedDocuments(result) {
+  const payload = result?.data ?? result
+  const items = Array.isArray(payload?.documents) ? payload.documents : []
+
+  const saved = {}
+  items.forEach((item) => {
+    const code = item.doc_type
+    const url = item.document_url ?? ''
+    if (!code || !isYes(item.uploaded ?? Boolean(url))) return
+    saved[code] = {
+      name: item.image_name ?? url.split('/').pop() ?? 'Uploaded file',
+      size: undefined,
+      url,
+    }
+  })
+  return saved
+}
+
+function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
   const inputId = `file-${doc.code}`
 
   const handleChange = (e) => {
@@ -35,10 +61,11 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
     }
 
     onUpload(doc.code, selected)
+    e.target.value = '' // lets the same file be chosen again
   }
 
   return (
-    <div className="border border-slate-200 rounded-lg p-4">
+    <div className={`border rounded-lg p-4 ${missing ? 'border-red-500' : 'border-slate-200'}`}>
       <div className="flex items-start justify-between mb-2">
         <div>
           <p className="text-sm font-semibold text-slate-800">{doc.name}</p>
@@ -63,13 +90,14 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
           htmlFor={inputId}
           className="mt-2 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg py-4 text-sm text-slate-500 cursor-pointer hover:border-blue-400 hover:text-blue-600"
         >
-          📤 Click to upload
+          {busy ? 'Uploading...' : '📤 Click to upload'}
 
           <input
             id={inputId}
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
             className="hidden"
+            disabled={busy}
             onChange={handleChange}
           />
         </label>
@@ -84,12 +112,22 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
               </p>
 
               <p className="text-xs text-slate-500">
-                {formatSize(file.size)} · Uploaded
+                {file.size ? `${formatSize(file.size)} · ` : ''}{busy ? 'Updating...' : 'Uploaded'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
+            {file.url && (
+              <a
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-slate-700 font-medium hover:underline"
+              >
+                View
+              </a>
+            )}
             <label
               htmlFor={inputId}
               className="text-xs text-blue-700 font-medium hover:underline cursor-pointer"
@@ -101,14 +139,16 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="hidden"
+                disabled={busy}
                 onChange={handleChange}
               />
             </label>
 
             <button
               type="button"
+              disabled={busy}
               onClick={() => onRemove(doc.code)}
-              className="text-xs text-red-600 font-medium hover:underline"
+              className="text-xs text-red-600 font-medium hover:underline disabled:opacity-50"
             >
               Remove
             </button>
@@ -122,8 +162,13 @@ function DocumentUploadCard({ doc, file, onUpload, onRemove }) {
 function ClassDocuments() {
   const navigate = useNavigate()
   const { classId } = useParams()
+  const formId = getFormId(classId)
+  // Documents already saved on the server: { [docCode]: { name, size, url } }
   const [files, setFiles] = useState({})
+  const [busy, setBusy] = useState({})
+  const [loadingSaved, setLoadingSaved] = useState(true)
 
+  const [triedContinue, setTriedContinue] = useState(false)
   const [documentList, setDocumentList] = useState([])
   const [loadingDocTypes, setLoadingDocTypes] = useState(true)
 
@@ -191,21 +236,88 @@ function ClassDocuments() {
     }
   }, [])
 
-  const handleUpload = (code, file) => {
-    setFiles((prev) => ({
-      ...prev,
-      [code]: file
-    }))
-
-    toast.success(`${file.name} uploaded`)
+  // Load documents already uploaded for this form, so they show again after coming back.
+  const loadSavedDocuments = async () => {
+    const result = await getDocuments(formId)
+    return normalizeSavedDocuments(result)
   }
 
-  const handleRemove = (code) => {
-    setFiles((prev) => {
-      const updated = { ...prev }
-      delete updated[code]
-      return updated
-    })
+  useEffect(() => {
+    if (!formId) {
+      setLoadingSaved(false)
+      return
+    }
+    let cancelled = false
+
+    async function loadSaved() {
+      try {
+        const saved = await loadSavedDocuments()
+        if (!cancelled) setFiles(saved)
+      } catch (err) {
+        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load your uploaded documents.'))
+      } finally {
+        if (!cancelled) setLoadingSaved(false)
+      }
+    }
+
+    loadSaved()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formId])
+
+  const setBusyFor = (code, value) => setBusy((prev) => ({ ...prev, [code]: value }))
+
+  const handleUpload = async (code, file) => {
+    if (!formId) {
+      toast.error('Application not found. Please start from Student Details.')
+      return
+    }
+    setBusyFor(code, true)
+    try {
+      // The backend refuses a second upload of the same document type,
+      // so when replacing, delete the old one first.
+      if (files[code]) {
+        await deleteDocument(formId, code)
+        setFiles((prev) => {
+          const updated = { ...prev }
+          delete updated[code]
+          return updated
+        })
+      }
+      await uploadDocument(formId, code, file)
+      setFiles((prev) => ({ ...prev, [code]: { name: file.name, size: file.size, url: '' } }))
+      toast.success(`${file.name} uploaded`)
+      // Refresh so the saved file's link (View) is available.
+      try {
+        const fresh = await loadSavedDocuments()
+        setFiles((prev) => ({ ...prev, ...fresh }))
+      } catch {
+        // The upload worked; the link will appear next time the page loads.
+      }
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not upload the document.'))
+    } finally {
+      setBusyFor(code, false)
+    }
+  }
+
+  const handleRemove = async (code) => {
+    if (!window.confirm('Remove this document?')) return
+    setBusyFor(code, true)
+    try {
+      await deleteDocument(formId, code)
+      setFiles((prev) => {
+        const updated = { ...prev }
+        delete updated[code]
+        return updated
+      })
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not remove the document.'))
+    } finally {
+      setBusyFor(code, false)
+    }
   }
 
   const requiredDocs = documentList.filter(
@@ -217,6 +329,7 @@ function ClassDocuments() {
   )
 
   const handleContinue = () => {
+    setTriedContinue(true)
     if (missingRequired.length > 0) {
       alert(
         `Please upload: ${missingRequired
@@ -232,7 +345,7 @@ function ClassDocuments() {
           code,
           {
             name: file.name,
-            size: file.size
+            size: file.size ?? 0
           }
         ]
       )
@@ -266,9 +379,9 @@ function ClassDocuments() {
             Upload clear scanned copies or photos of the following documents.
           </p>
 
-          {loadingDocTypes ? (
+          {loadingDocTypes || loadingSaved ? (
             <p className="text-sm text-slate-500 text-center py-6">
-              Loading document types...
+              Loading documents...
             </p>
           ) : documentList.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-6">
@@ -281,6 +394,8 @@ function ClassDocuments() {
                   key={doc.code}
                   doc={doc}
                   file={files[doc.code]}
+                  busy={Boolean(busy[doc.code])}
+                  missing={triedContinue && doc.required && !files[doc.code]}
                   onUpload={handleUpload}
                   onRemove={handleRemove}
                 />

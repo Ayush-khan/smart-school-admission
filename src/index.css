@@ -161,6 +161,12 @@
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
+/* Red border on a form field while its validation message is showing */
+div:has(> p.text-xs.text-red-600) > :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
+div:has(> p.text-xs.text-red-600) > .relative > :is(input:not([type='checkbox']):not([type='radio']), button) {
+  border-color: #dc2626;
+}
+
 /* :root {
   --text: #6b6375;
   --text-h: #08060d;

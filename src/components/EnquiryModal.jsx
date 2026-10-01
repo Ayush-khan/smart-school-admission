@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
+import DateInput from './DateInput'
 
 function EnquiryModal({ onClose }) {
   const [firstName, setFirstName] = useState('')
@@ -24,6 +25,7 @@ function EnquiryModal({ onClose }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
     const [show, setShow] = useState(false)
 
@@ -67,12 +69,16 @@ function EnquiryModal({ onClose }) {
     'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1'
 
+  // Red border on a required field that is still empty after pressing Submit
+  const fieldClass = (invalid) =>
+  submitted && invalid ? inputClass.replace('border-slate-300', 'border-red-500') : inputClass
+
     const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitted(true)
 
     if (
       !firstName.trim() ||
-      !lastName.trim() ||
       !dob ||
       !gender ||
       !classId ||
@@ -143,7 +149,7 @@ function EnquiryModal({ onClose }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>First Name</label>
-              <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <input className={fieldClass(!firstName.trim())} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
             </div>
             <div>
               <label className={labelClass}>Middle Name</label>
@@ -157,13 +163,13 @@ function EnquiryModal({ onClose }) {
 
           <div>
             <label className={labelClass}>Date of Birth <span className="text-red-500">*</span></label>
-            <input type="date" className={inputClass} value={dob} onChange={(e) => setDob(e.target.value)} />
+            <DateInput className={fieldClass(!dob)} value={dob} onChange={setDob} max={new Date().toISOString().split('T')[0]} />
           </div>
 
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Gender <span className="text-red-500">*</span></label>
-                            <select className={inputClass} value={gender} onChange={(e) => setGender(e.target.value)}>
+                            <select className={fieldClass(!gender)} value={gender} onChange={(e) => setGender(e.target.value)}>
                 <option value="" disabled hidden>Select gender</option>
                  {genders.map((g) => (
                   <option key={g.field_option_id} value={g.field_option_id}>
@@ -175,7 +181,7 @@ function EnquiryModal({ onClose }) {
 
             <div>
               <label className={labelClass}>Class <span className="text-red-500">*</span></label>
-              <select className={inputClass} value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <select className={fieldClass(!classId)} value={classId} onChange={(e) => setClassId(e.target.value)}>
                 <option value="">Select class</option>
                 {classes.map((c) => (
                   <option key={c.id ?? c.class_id} value={c.id ?? c.class_id}>
@@ -189,11 +195,11 @@ function EnquiryModal({ onClose }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Father's Name <span className="text-red-500">*</span></label>
-              <input className={inputClass} value={fatherName} onChange={(e) => setFatherName(e.target.value)} />
+              <input className={fieldClass(!fatherName.trim() && !motherName.trim())} value={fatherName} onChange={(e) => setFatherName(e.target.value)} />
             </div>
             <div>
               <label className={labelClass}>Mother's Name <span className="text-red-500">*</span></label>
-              <input className={inputClass} value={motherName} onChange={(e) => setMotherName(e.target.value)} />
+              <input className={fieldClass(!fatherName.trim() && !motherName.trim())} value={motherName} onChange={(e) => setMotherName(e.target.value)} />
             </div>
           </div>
           
@@ -201,7 +207,7 @@ function EnquiryModal({ onClose }) {
 
           <div>
           <label className={labelClass}>Contact No. <span className="text-red-500">*</span></label>
-            <input className={inputClass} value={contact} onChange={(e) => setContact(e.target.value)} />
+            <input className={fieldClass(!contact.trim())} value={contact} onChange={(e) => setContact(e.target.value)} />
           </div>
 
           <div>
@@ -231,15 +237,6 @@ function EnquiryModal({ onClose }) {
               onChange={(e) => setSiblingInSchool(e.target.checked)}
             />
             Sibling is currently studying at this school
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={documentsAvailable}
-              onChange={(e) => setDocumentsAvailable(e.target.checked)}
-            />
-            All documents are available
           </label>
 
           <div>
