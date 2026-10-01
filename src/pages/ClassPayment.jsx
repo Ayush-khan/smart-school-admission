@@ -95,7 +95,9 @@ function ClassPayment() {
 
   const student = appData.student || {}
   const studentName = [student.firstName, student.lastName].filter(Boolean).join(' ') || '—'
-  const amount = Number(payment?.amount ?? 0)
+  // Amount comes from the backend: the payment record once available,
+  // otherwise the class's application form fee from the classes API.
+  const amount = Number(payment?.amount ?? classData.feeStructure.totalFee ?? 0)
   const orderId = payment?.order_id ?? payment?.orderId ?? searchParams.get('order_id') ?? searchParams.get('orderId')
 
   const handlePay = async () => {
@@ -153,13 +155,15 @@ function ClassPayment() {
           <div>
             <p className="text-slate-500">Amount</p>
             <p className="font-semibold text-slate-800">
-              {amount ? `Rs. ${amount.toLocaleString()}/-` : 'Calculated at checkout'}
+              {amount ? `Rs. ${amount.toLocaleString()}/-` : '—'}
             </p>
           </div>
-          <div>
-            <p className="text-slate-500">Order ID</p>
-            <p className="font-semibold text-slate-800">{orderId || 'Generated at checkout'}</p>
-          </div>
+          {status === 'successful' && orderId && (
+            <div>
+              <p className="text-slate-500">Order ID</p>
+              <p className="font-semibold text-slate-800">{orderId}</p>
+            </div>
+          )}
         </div>
 
         {status === 'pending' && (

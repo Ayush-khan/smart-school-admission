@@ -20,7 +20,9 @@ function VerifyOtp() {
 
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
-  const [timer, setTimer] = useState(30)
+  // Countdown only starts when arriving via "Resend OTP" on the login page;
+  // from "Use OTP / Password" the Resend OTP button is available immediately.
+  const [timer, setTimer] = useState(location.state?.justResent ? 30 : 0)
   const [today, setToday] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)
