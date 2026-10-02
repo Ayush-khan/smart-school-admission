@@ -30,12 +30,13 @@ function DateInput({ value, onChange, min, max, className = '' }) {
   const handleType = (e) => {
     const masked = mask(e.target.value)
     setText(masked)
-    onChange(toIso(masked))
+    onChange(toIso(masked), masked)
   }
 
   const handlePick = (e) => {
-    setText(toDisplay(e.target.value))
-    onChange(e.target.value)
+    const shown = toDisplay(e.target.value)
+    setText(shown)
+    onChange(e.target.value, shown)
   }
 
   return (

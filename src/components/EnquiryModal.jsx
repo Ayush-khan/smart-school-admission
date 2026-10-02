@@ -338,7 +338,7 @@ function EnquiryModal({ onClose, onSubmitted }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>Father's Name {star}</label>
+              <label className={labelClass}>Father's Name</label>
               <input
                 className={cls(showErr('fatherName') || parentsErr)}
                 data-invalid={Boolean(showErr('fatherName') || parentsErr)}
@@ -347,7 +347,7 @@ function EnquiryModal({ onClose, onSubmitted }) {
               {fieldError('fatherName')}
             </div>
             <div>
-              <label className={labelClass}>Mother's Name {star}</label>
+              <label className={labelClass}>Mother's Name</label>
               <input
                 className={cls(showErr('motherName') || parentsErr)}
                 data-invalid={Boolean(showErr('motherName') || parentsErr)}
