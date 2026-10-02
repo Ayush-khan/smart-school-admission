@@ -168,7 +168,7 @@ function ClassParentDetails() {
                   inputMode="numeric"
                   maxLength={12}
                   {...register('motherAadhaar', {
-                    pattern: { value: /^\d{12}$/, message: 'Aadhaar must be exactly 12 digits' },
+                    pattern: { value: /^\d{12}$/, message: 'Enter a valid Aadhar No.' },
                     onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
                   })}
                 />
@@ -181,7 +181,7 @@ function ClassParentDetails() {
                   inputMode="numeric"
                   maxLength={12}
                   {...register('fatherAadhaar', {
-                    pattern: { value: /^\d{12}$/, message: 'Aadhaar must be exactly 12 digits' },
+                    pattern: { value: /^\d{12}$/, message: 'Enter a valid Aadhar No.' },
                     onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
                   })}
                 />

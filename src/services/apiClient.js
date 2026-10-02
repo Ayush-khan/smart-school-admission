@@ -20,7 +20,12 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Auth endpoints return 401 for wrong OTP / password. Those must stay on the
+    // current page and show the error, not bounce the user to Login.
+    const url = error.config?.url || ''
+    const isAuthCall = /\/(verify-otp|send-otp|resend-otp|registration)(\/|\?|$)/.test(url)
+
+    if (error.response?.status === 401 && !isAuthCall) {
       localStorage.removeItem('authToken')
       window.location.href = '/login'
     }

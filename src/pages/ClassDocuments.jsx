@@ -8,7 +8,9 @@ import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { getDocumentTypes } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getFormId } from '../utils/formId'
-import { uploadDocument, getDocuments, deleteDocument } from '../services/documentService'
+import { uploadDocument, getDocuments, deleteDocument, viewDocument } from '../services/documentService'
+import apiClient from '../services/apiClient'
+import { getSessionInfo } from '../utils/session'
 
 const MAX_FILE_SIZE_KB = 220
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024
@@ -43,7 +45,7 @@ function normalizeSavedDocuments(result) {
   return saved
 }
 
-function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
+function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onView }) {
   const inputId = `file-${doc.code}`
 
   const handleChange = (e) => {
@@ -82,13 +84,19 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
           </p>
         </div>
 
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
-            doc.required ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          {doc.required ? 'Required' : 'Optional'}
-        </span>
+        {doc.required ? (
+          missing ? (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 bg-red-100 text-red-700">
+              Required
+            </span>
+          ) : (
+            <span className="text-base font-bold text-red-600 flex-shrink-0 leading-none">*</span>
+          )
+        ) : (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 bg-slate-100 text-slate-600">
+            Optional
+          </span>
+        )}
       </div>
 
       {!file ? (
@@ -135,25 +143,15 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {file.url ? (
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="View"
-                aria-label={`View ${doc.name}`}
-                className={`${iconBtn} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`}
-              >
-                <Eye size={16} />
-              </a>
-            ) : (
-              <span
-                title="Preview available after refresh"
-                className={`${iconBtn} border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed`}
-              >
-                <Eye size={16} />
-              </span>
-            )}
+            <button
+              type="button"
+              onClick={() => onView(doc.code)}
+              title="View"
+              aria-label={`View ${doc.name}`}
+              className={`${iconBtn} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`}
+            >
+              <Eye size={16} />
+            </button>
 
             <label
               htmlFor={inputId}
@@ -335,6 +333,34 @@ function ClassDocuments() {
     }
   }
 
+  // View: ask the backend for the document link (GET .../documents/{docType}), then fetch the file
+  // WITH the login token (a plain new-tab link cannot send it) and open it in a new tab.
+  const handleView = async (code) => {
+    const win = window.open('', '_blank') // open first so the browser does not block the pop-up
+    try {
+      const result = await viewDocument(formId, code)
+      const d = result?.data ?? result
+      const url = d?.document_url ?? d?.url ?? d?.document?.document_url
+      if (!url) throw new Error('Document link was not returned.')
+
+      try {
+        const res = await apiClient.get(url, {
+          responseType: 'blob',
+          params: { nar_id: getSessionInfo().narId },
+        })
+        if (win) win.location.href = URL.createObjectURL(res.data)
+      } catch (fetchErr) {
+        // The server answered (403, 404 ...): show the error.
+        if (fetchErr?.response) throw fetchErr
+        // No answer at all (e.g. file is on another domain and blocks the request): open the link directly.
+        if (win) win.location.href = url
+      }
+    } catch (err) {
+      win?.close()
+      toast.error(getErrorMessage(err, 'Could not open the document.'))
+    }
+  }
+
   const handleRemove = async (code) => {
     if (!window.confirm('Remove this document?')) return
     setBusyFor(code, true)
@@ -430,6 +456,7 @@ function ClassDocuments() {
                   missing={triedContinue && doc.required && !files[doc.code]}
                   onUpload={handleUpload}
                   onRemove={handleRemove}
+                  onView={handleView}
                 />
               ))}
             </div>

@@ -20,8 +20,12 @@ function VerifyOtp() {
 
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
-  // Countdown only when arriving via Login's "Resend OTP" (justResent). "Use OTP / Password" starts at 0.
-  const [timer, setTimer] = useState(() => (location.state?.justResent ? getResendRemaining(contact) || 30 : 0))
+  // Countdown shows when arriving via Login's "Resend OTP" (justResent) or as a brand-new user
+  // (newUser: the first OTP was just sent). An existing user using "Use OTP / Password" starts at 0.
+  const isNewUser = location.state?.newUser ?? false
+  const [timer, setTimer] = useState(() =>
+    location.state?.justResent || isNewUser ? getResendRemaining(contact) || 30 : 0,
+  )
   const [today, setToday] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)
@@ -130,7 +134,9 @@ function VerifyOtp() {
             <p className="text-blue-700 font-semibold text-base leading-snug">
               {justResent
                 ? `A new OTP has been sent to your ${mode === 'mobile' ? 'mobile number' : 'email'}.`
-                : 'We already sent OTP earlier. Please use the same OTP as password.'}
+                : isNewUser
+                  ? `An OTP has been sent to your ${mode === 'mobile' ? 'mobile number' : 'email'}. Please use it as your password.`
+                  : 'We already sent OTP earlier. Please use the same OTP as password.'}
             </p>
             <p className="text-slate-800 text-sm mt-3">
               {mode === 'mobile' ? 'OTP sent to mobile' : 'Email sent to'}: <span className="font-medium">{contact || '—'}</span>

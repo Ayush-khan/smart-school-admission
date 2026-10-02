@@ -7,6 +7,11 @@ import { getErrorMessage } from '../services/apiHelpers'
 import { saveSessionInfo, startResendCooldown, getResendRemaining } from '../utils/session'
 import loginVideo from '../assets/Login_video_Students.mp4'
 
+// Ask the backend: does POST /api/admission/registration send the first OTP by itself?
+//   true  -> the backend sends it, the frontend only starts the countdown.
+//   false -> the frontend calls send-otp after registration, then starts the countdown.
+const REGISTRATION_SENDS_OTP = true
+
 function Login() {
   const [mode, setMode] = useState('mobile') // 'mobile' or 'email'
   const [fullName, setFullName] = useState('')
@@ -107,26 +112,51 @@ function Login() {
   }
 
   // Shared lookup step: reuse the existing account, otherwise register.
+  // Returns { narId, isNewUser }. narId is null when something failed.
   const lookupNarId = async () => {
-    // Existing user (found by the check-user lookup above)
-    if (existingNarId) {
-      saveSessionInfo({ narId: existingNarId, mode, contact, fullName })
-      return existingNarId
+    let knownNarId = existingNarId
+    let knownName = fullName
+
+    // The check-user lookup runs 500 ms after typing. If the user clicked a button
+    // faster than that, check once more here so an old user is never treated as new.
+    if (!knownNarId) {
+      try {
+        const res = await checkExistingUser({ mode, contact })
+        const d = res?.data ?? res
+        const exists = [true, 1, '1', 'true'].includes(d?.exists ?? res?.exists)
+        const id = d?.nar_id ?? d?.narId ?? null
+        if (exists && id) {
+          knownNarId = id
+          if (d?.parent_name) knownName = d.parent_name
+          setFullName(knownName)
+          setFullNameError('')
+          setNameLocked(true)
+          setExistingNarId(id)
+        }
+      } catch (err) {
+        console.warn('check-user failed, continuing as new user', err)
+      }
+    }
+
+    // Existing user: reuse the account, do not register again
+    if (knownNarId) {
+      saveSessionInfo({ narId: knownNarId, mode, contact, fullName: knownName })
+      return { narId: knownNarId, isNewUser: false }
     }
 
     // New user: Start registration
     const result = await createRegistration({ fullName, mode, contact })
     if (result.success === false) {
       setContactError(result.message || 'Registration failed. Please try again.')
-      return null
+      return { narId: null, isNewUser: true }
     }
     const narId = result.data?.nar_id ?? result.data?.narId ?? result.nar_id ?? result.narId
     if (!narId) {
       setContactError('Registration succeeded, but the admission ID was not returned. Please contact the school.')
-      return null
+      return { narId: null, isNewUser: true }
     }
     saveSessionInfo({ narId, mode, contact, fullName })
-    return narId
+    return { narId, isNewUser: true }
   }
 
   // "Use OTP / Password" — for logging in with an OTP the user already has.
@@ -137,9 +167,24 @@ function Login() {
     setContactError('')
     setFullNameError('')
     try {
-      const narId = await lookupNarId()
+      const { narId, isNewUser } = await lookupNarId()
       if (!narId) return
-      navigate('/verify-otp', { state: { contact, mode, narId } })
+
+      // New user: the first OTP is sent now, so show the countdown on the next screen.
+      // Existing user: no new OTP is sent, so no countdown.
+      if (isNewUser) {
+        if (!REGISTRATION_SENDS_OTP) {
+          try {
+            await sendOtp({ narId, mode, contact })
+          } catch (sendErr) {
+            setContactError(getErrorMessage(sendErr, 'Could not send OTP. Please try again.'))
+            return
+          }
+        }
+        startResendCooldown(contact)
+      }
+
+      navigate('/verify-otp', { state: { contact, mode, narId, newUser: isNewUser } })
     } catch (err) {
       setContactError(getErrorMessage(err, 'Registration failed. Please try again.'))
     } finally {
@@ -155,8 +200,7 @@ function Login() {
     setContactError('')
     setFullNameError('')
     try {
-      const isNewUser = !existingNarId
-      const narId = await lookupNarId()
+      const { narId, isNewUser } = await lookupNarId()
       if (!narId) return
       try {
         await resendOtp({ narId, mode, contact })

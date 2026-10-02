@@ -12,12 +12,11 @@ const SIGNATURE_NAME_MAX = 100
 const NAME_PATTERN = nameRules('full name').pattern.value
 
 // Full name used as a digital signature: letters and spaces only (same rule as the other
-// name fields), at least two words (first + last name).
+// name fields). A single word is allowed (some people have no last name).
 const validateSignatureName = (value) => {
   const v = value.trim().replace(/\s+/g, ' ')
-  if (!v) return 'Required'
+  if (!v) return 'Enter your full name'
   if (!NAME_PATTERN.test(v)) return 'Enter a valid full name.'
-  if (v.split(' ').length < 2) return 'Enter your full name (first and last name).'
   if (v.length < 3) return 'Enter a valid full name.'
   return ''
 }
@@ -45,8 +44,8 @@ function ClassDeclaration() {
       alert('Please upload a PDF file for the signature.')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Signature PDF must be 5 MB or smaller.')
+    if (file.size > 220 * 1024) {
+      alert('Signature PDF must be 220 KB or smaller.')
       e.target.value = ''
       return
     }
@@ -208,7 +207,7 @@ function ClassDeclaration() {
                     htmlFor="signatureUpload"
                     className="flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg py-6 text-sm text-slate-500 cursor-pointer hover:border-blue-400 hover:text-blue-600"
                   >
-                    📤 Click to upload signature PDF (max 5 MB)
+                    📤 Click to upload signature PDF (max 220 KB)
                     <input
                       id="signatureUpload"
                       type="file"
