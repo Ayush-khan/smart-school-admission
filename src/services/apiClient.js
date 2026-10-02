@@ -4,6 +4,7 @@ const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-School-Domain': window.location.hostname,   // <-- ye nayi line
   },
 })
 
@@ -20,8 +21,6 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Auth endpoints return 401 for wrong OTP / password. Those must stay on the
-    // current page and show the error, not bounce the user to Login.
     const url = error.config?.url || ''
     const isAuthCall = /\/(verify-otp|send-otp|resend-otp|registration)(\/|\?|$)/.test(url)
 
