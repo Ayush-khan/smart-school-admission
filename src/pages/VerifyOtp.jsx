@@ -20,7 +20,8 @@ function VerifyOtp() {
 
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
-  const [timer, setTimer] = useState(() => (location.state?.justResent ? getResendRemaining(contact) || 30 : 30))
+  // Countdown only when arriving via Login's "Resend OTP" (justResent). "Use OTP / Password" starts at 0.
+  const [timer, setTimer] = useState(() => (location.state?.justResent ? getResendRemaining(contact) || 30 : 0))
   const [today, setToday] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)

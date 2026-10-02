@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Eye, RefreshCw, Trash2, FileText, Upload, CheckCircle2, Loader2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import toast from 'react-hot-toast'
@@ -64,21 +65,26 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
     e.target.value = '' // lets the same file be chosen again
   }
 
+  const iconBtn =
+    'h-8 w-8 flex items-center justify-center rounded-full border transition-colors'
+
   return (
-    <div className={`border rounded-lg p-4 ${missing ? 'border-red-500' : 'border-slate-200'}`}>
-      <div className="flex items-start justify-between mb-2">
-        <div>
+    <div
+      className={`border rounded-xl p-4 bg-white shadow-sm ${
+        missing ? 'border-red-500' : 'border-slate-200'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-800">{doc.name}</p>
-          <p className="text-xs text-slate-500">
-            Accepted: PDF, JPG, JPEG, PNG · Max {MAX_FILE_SIZE_KB} KB
+          <p className="text-xs text-slate-500 mt-0.5">
+            PDF, JPG, JPEG, PNG · Max {MAX_FILE_SIZE_KB} KB
           </p>
         </div>
 
         <span
           className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
-            doc.required
-              ? 'bg-red-100 text-red-700'
-              : 'bg-slate-100 text-slate-600'
+            doc.required ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
           }`}
         >
           {doc.required ? 'Required' : 'Optional'}
@@ -88,9 +94,12 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
       {!file ? (
         <label
           htmlFor={inputId}
-          className="mt-2 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg py-4 text-sm text-slate-500 cursor-pointer hover:border-blue-400 hover:text-blue-600"
+          className={`flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-300 rounded-lg py-5 text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/40 ${
+            busy ? 'opacity-60 cursor-wait' : 'cursor-pointer'
+          }`}
         >
-          {busy ? 'Uploading...' : '📤 Click to upload'}
+          {busy ? <Loader2 size={22} className="animate-spin" /> : <Upload size={22} />}
+          <span>{busy ? 'Uploading...' : 'Click to upload'}</span>
 
           <input
             id={inputId}
@@ -102,38 +111,59 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
           />
         </label>
       ) : (
-        <div className="mt-2 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="text-green-700">✓</span>
-
-            <div className="overflow-hidden">
-              <p className="text-xs font-medium text-slate-800 truncate">
-                {file.name}
-              </p>
-
-              <p className="text-xs text-slate-500">
-                {file.size ? `${formatSize(file.size)} · ` : ''}{busy ? 'Updating...' : 'Uploaded'}
-              </p>
-            </div>
+        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+          <div className="h-9 w-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0">
+            <FileText size={18} />
           </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {file.url && (
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-slate-800 truncate" title={file.name}>
+              {file.name}
+            </p>
+            <p className="text-xs text-slate-500 flex items-center gap-1">
+              {busy ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" /> Updating...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={12} className="text-green-600" />
+                  {file.size ? `${formatSize(file.size)} · ` : ''}Uploaded
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {file.url ? (
               <a
                 href={file.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-slate-700 font-medium hover:underline"
+                title="View"
+                aria-label={`View ${doc.name}`}
+                className={`${iconBtn} border-slate-300 bg-white text-slate-700 hover:bg-slate-100`}
               >
-                View
+                <Eye size={16} />
               </a>
+            ) : (
+              <span
+                title="Preview available after refresh"
+                className={`${iconBtn} border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed`}
+              >
+                <Eye size={16} />
+              </span>
             )}
+
             <label
               htmlFor={inputId}
-              className="text-xs text-blue-700 font-medium hover:underline cursor-pointer"
+              title="Replace"
+              aria-label={`Replace ${doc.name}`}
+              className={`${iconBtn} border-blue-200 bg-white text-blue-700 hover:bg-blue-50 ${
+                busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              }`}
             >
-              Replace
-
+              <RefreshCw size={16} />
               <input
                 id={inputId}
                 type="file"
@@ -146,11 +176,13 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove }) {
 
             <button
               type="button"
+              title="Remove"
+              aria-label={`Remove ${doc.name}`}
               disabled={busy}
               onClick={() => onRemove(doc.code)}
-              className="text-xs text-red-600 font-medium hover:underline disabled:opacity-50"
+              className={`${iconBtn} border-red-200 bg-white text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              Remove
+              <Trash2 size={16} />
             </button>
           </div>
         </div>

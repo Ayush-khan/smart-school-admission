@@ -6,6 +6,21 @@ import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { saveAdmissionSignature } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getFormId } from '../utils/formId'
+import { nameRules } from '../utils/validators'
+
+const SIGNATURE_NAME_MAX = 100
+const NAME_PATTERN = nameRules('full name').pattern.value
+
+// Full name used as a digital signature: letters and spaces only (same rule as the other
+// name fields), at least two words (first + last name).
+const validateSignatureName = (value) => {
+  const v = value.trim().replace(/\s+/g, ' ')
+  if (!v) return 'Required'
+  if (!NAME_PATTERN.test(v)) return 'Enter a valid full name.'
+  if (v.split(' ').length < 2) return 'Enter your full name (first and last name).'
+  if (v.length < 3) return 'Enter a valid full name.'
+  return ''
+}
 
 function ClassDeclaration() {
   const navigate = useNavigate()
@@ -18,8 +33,8 @@ function ClassDeclaration() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const [signatureMode, setSignatureMode] = useState('type') // 'type' or 'upload'
   const [typedName, setTypedName] = useState('')
+  const [nameTouched, setNameTouched] = useState(false)
   const [signatureConfirmed, setSignatureConfirmed] = useState(false)
   const [uploadedSignature, setUploadedSignature] = useState(null)
 
@@ -30,6 +45,11 @@ function ClassDeclaration() {
       alert('Please upload a PDF file for the signature.')
       return
     }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Signature PDF must be 5 MB or smaller.')
+      e.target.value = ''
+      return
+    }
     setUploadedSignature(file)
     toast.success('Signature PDF uploaded')
   }
@@ -38,18 +58,28 @@ function ClassDeclaration() {
     setUploadedSignature(null)
   }
 
+  const hasTypedName = typedName.trim().length > 0
+  // Typed signature is optional: only checked when the user starts typing.
+  const nameError = hasTypedName ? validateSignatureName(typedName) : ''
+  const showNameError = nameTouched && nameError
+
   const handleSubmitClick = () => {
     if (!confirmChecked || !termsChecked || !privacyChecked) {
       setError('Please accept all three declarations before submitting.')
       return
     }
 
-    if (signatureMode === 'type' && (!typedName.trim() || !signatureConfirmed)) {
-      setError('Please type your name and confirm it as your digital signature.')
+    setNameTouched(true)
+    if (!hasTypedName && !uploadedSignature) {
+      setError('Please provide at least one type of signature.')
       return
     }
-    if (signatureMode === 'upload' && !uploadedSignature) {
-      setError('Please upload your signature as a PDF before submitting.')
+    if (hasTypedName && nameError) {
+      setError('Please correct your full name before submitting.')
+      return
+    }
+    if (hasTypedName && !signatureConfirmed) {
+      setError('Please confirm that your typed name is your digital signature.')
       return
     }
 
@@ -68,8 +98,9 @@ function ClassDeclaration() {
       }
       await saveAdmissionSignature({
         formId,
-        signatureType: signatureMode === 'type' ? 'typed' : 'pdf',
-        signatureName: typedName.trim(),
+        // The API takes one signature_type; if a PDF is attached, it is sent as 'pdf' (typed name travels with it).
+        signatureType: uploadedSignature ? 'pdf' : 'typed',
+        signatureName: hasTypedName ? typedName.trim().replace(/\s+/g, ' ') : '',
         signatureFile: uploadedSignature,
         declarationConfirmed: confirmChecked,
         termsAccepted: termsChecked,
@@ -130,63 +161,54 @@ function ClassDeclaration() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Digital Signature</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Digital Signature</label>
+            <p className="text-xs text-slate-500 mb-3">
+              Both options are optional. You can type your name, upload a signed PDF, or do both. At least one is needed.
+            </p>
 
-            <div className="flex flex-wrap gap-2 mb-3">
-              <button
-                type="button"
-                onClick={() => setSignatureMode('type')}
-                className={`text-xs font-medium px-4 py-1.5 rounded-full border-2 transition ${
-                  signatureMode === 'type'
-                    ? 'border-blue-900 bg-blue-50 text-navy'
-                    : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                ✍️ Type Signature
-              </button>
-              <button
-                type="button"
-                onClick={() => setSignatureMode('upload')}
-                className={`text-xs font-medium px-4 py-1.5 rounded-full border-2 transition ${
-                  signatureMode === 'upload'
-                    ? 'border-blue-900 bg-blue-50 text-navy'
-                    : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                📄 Upload Signature (PDF)
-              </button>
-            </div>
-
-            {signatureMode === 'type' ? (
-              <div className="space-y-3">
+            <div className="space-y-4">
+              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                <p className="text-xs font-semibold text-slate-700">✍️ Type Signature</p>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Full Name (as signature)</label>
                   <input
                     type="text"
                     value={typedName}
-                    onChange={(e) => setTypedName(e.target.value)}
+                    maxLength={SIGNATURE_NAME_MAX}
+                    onChange={(e) => {
+                      // no leading space, no double spaces
+                      setTypedName(e.target.value.replace(/^\s+/, '').replace(/\s{2,}/g, ' '))
+                      setError('')
+                    }}
+                    onBlur={() => setNameTouched(true)}
                     placeholder="Type your full name"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      showNameError ? 'border-red-500' : 'border-slate-300'
+                    }`}
                   />
+                  {showNameError && <p className="text-xs text-red-600 mt-1">{nameError}</p>}
                 </div>
-                <label className="flex items-start gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 mt-0.5"
-                    checked={signatureConfirmed}
-                    onChange={(e) => setSignatureConfirmed(e.target.checked)}
-                  />
-                  I agree that typing my name above serves as my digital signature and confirms this declaration.
-                </label>
+                {hasTypedName && (
+                  <label className="flex items-start gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 mt-0.5"
+                      checked={signatureConfirmed}
+                      onChange={(e) => setSignatureConfirmed(e.target.checked)}
+                    />
+                    I agree that typing my name above serves as my digital signature and confirms this declaration.
+                  </label>
+                )}
               </div>
-            ) : (
-              <div>
+
+              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                <p className="text-xs font-semibold text-slate-700">📄 Upload Signature PDF</p>
                 {!uploadedSignature ? (
                   <label
                     htmlFor="signatureUpload"
                     className="flex items-center justify-center border-2 border-dashed border-slate-300 rounded-lg py-6 text-sm text-slate-500 cursor-pointer hover:border-blue-400 hover:text-blue-600"
                   >
-                    📤 Click to upload signature PDF
+                    📤 Click to upload signature PDF (max 5 MB)
                     <input
                       id="signatureUpload"
                       type="file"
@@ -197,21 +219,21 @@ function ClassDeclaration() {
                   </label>
                 ) : (
                   <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
                       <span className="text-green-700">✓</span>
-                      <p className="text-xs font-medium text-slate-800">{uploadedSignature.name}</p>
+                      <p className="text-xs font-medium text-slate-800 truncate">{uploadedSignature.name}</p>
                     </div>
                     <button
                       type="button"
                       onClick={removeUploadedSignature}
-                      className="text-xs text-red-600 font-medium hover:underline"
+                      className="text-xs text-red-600 font-medium hover:underline flex-shrink-0"
                     >
                       Remove
                     </button>
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-600 mb-4">{error}</p>}

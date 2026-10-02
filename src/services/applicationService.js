@@ -192,10 +192,11 @@ export async function saveAdmissionSignature({
   const formData = new FormData()
   formData.append('form_id', formId)
   formData.append('signature_type', signatureType)
-  if (signatureType === 'typed') {
+  // Typed name and PDF are both optional; send whichever the user provided.
+  if (signatureName) {
     formData.append('signature_name', signatureName)
   }
-  if (signatureType === 'pdf' && signatureFile) {
+  if (signatureFile) {
     formData.append('signature_file', signatureFile)
   }
   formData.append('declaration_confirmed', declarationConfirmed ? 'Y' : 'N')

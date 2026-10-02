@@ -14,6 +14,7 @@ function ClassSiblingDetails() {
   const [hasSibling, setHasSibling] = useState(savedData.siblings?.hasSibling || false)
 
   const { register, control, handleSubmit, formState: { errors } } = useForm({
+    mode: 'onChange',
     defaultValues: {
       siblings: savedData.siblings?.list || [
         { name: '', className: '', section: '', admissionNumber: '', relationship: '' },
@@ -26,7 +27,9 @@ function ClassSiblingDetails() {
   const inputClass =
     'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1'
+  const reqStar = <span className="text-red-500">*</span>
   const errClass = 'text-xs text-red-600 mt-1'
+  const inputCls = (err) => (err ? `${inputClass} !border-red-500` : inputClass)
 
     const onSubmit = (data) => {
     saveApplicationSection(classId, 'siblings', { hasSibling, list: hasSibling ? data.siblings : [] })
@@ -74,20 +77,21 @@ function ClassSiblingDetails() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className={labelClass}>Sibling Name</label>
+                        <label className={labelClass}>{reqStar} Sibling Name</label>
                         <input
-                          className={inputClass}
+                          className={inputCls(errors.siblings?.[index]?.name)}
                           maxLength={100}
-                          {...register(`siblings.${index}.name`, nameRules("sibling's name"))}
+                          {...register(`siblings.${index}.name`, nameRules("sibling's name", true))}
                         />
                         {errors.siblings?.[index]?.name && <p className={errClass}>{errors.siblings[index].name.message}</p>}
                       </div>
                       <div>
-                        <label className={labelClass}>Class</label>
+                        <label className={labelClass}>{reqStar} Class</label>
                         <input
-                          className={inputClass}
+                          className={inputCls(errors.siblings?.[index]?.className)}
                           maxLength={20}
                           {...register(`siblings.${index}.className`, {
+                            required: 'Required',
                             pattern: { value: /^[A-Za-z0-9][A-Za-z0-9 -]*$/, message: 'Enter a valid class.' },
                           })}
                         />
@@ -96,7 +100,7 @@ function ClassSiblingDetails() {
                       <div>
                         <label className={labelClass}>Section</label>
                         <input
-                          className={inputClass}
+                          className={inputCls(errors.siblings?.[index]?.section)}
                           maxLength={3}
                           {...register(`siblings.${index}.section`, {
                             pattern: { value: /^[A-Za-z0-9]{1,3}$/, message: 'Enter a valid section (e.g. A).' },
@@ -107,20 +111,22 @@ function ClassSiblingDetails() {
                       <div>
                         <label className={labelClass}>Admission Number</label>
                         <input
-                          className={inputClass}
+                          className={inputCls(errors.siblings?.[index]?.admissionNumber)}
+                          inputMode="numeric"
                           maxLength={20}
                           {...register(`siblings.${index}.admissionNumber`, {
-                            pattern: { value: /^[A-Za-z0-9][A-Za-z0-9/-]*$/, message: 'Only letters, numbers, / and - are allowed.' },
+                            pattern: { value: /^\d+$/, message: 'Only numbers are allowed.' },
+                            onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
                           })}
                         />
                         {errors.siblings?.[index]?.admissionNumber && <p className={errClass}>{errors.siblings[index].admissionNumber.message}</p>}
                       </div>
                       <div>
-                        <label className={labelClass}>Relationship</label>
+                        <label className={labelClass}>{reqStar} Relationship</label>
                         <input
-                          className={inputClass}
+                          className={inputCls(errors.siblings?.[index]?.relationship)}
                           maxLength={30}
-                          {...register(`siblings.${index}.relationship`, nameRules('relationship'))}
+                          {...register(`siblings.${index}.relationship`, nameRules('relationship', true))}
                         />
                         {errors.siblings?.[index]?.relationship && <p className={errClass}>{errors.siblings[index].relationship.message}</p>}
                       </div>

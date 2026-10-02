@@ -1,10 +1,55 @@
-import { useForm } from 'react-hook-form'
+import { useState, useEffect, useRef } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { nameRules, occupationRules, mobileRules } from '../utils/validators'
+
+const CONTRIBUTION_OPTIONS = ['Cultural', 'Medical', 'Media', 'Academic']
+
+function MultiSelect({ value = [], onChange, options, placeholder, className }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const toggle = (opt) => {
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt])
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`${className} flex items-center justify-between bg-white text-left min-h-[38px]`}
+      >
+        <span className={value.length ? 'text-slate-800' : 'text-slate-400'}>
+          {value.length ? value.map((v) => v.toUpperCase()).join(', ') : placeholder}
+        </span>
+        <span className="text-slate-400 text-xs ml-2">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-slate-300 rounded-lg shadow-lg py-1">
+          {options.map((opt) => (
+            <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox" checked={value.includes(opt)} onChange={() => toggle(opt)} />
+              {opt.toUpperCase()}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function ClassParentDetails() {
   const navigate = useNavigate()
@@ -14,9 +59,10 @@ function ClassParentDetails() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
-  } = useForm({ defaultValues: savedData.parents || {}, mode: 'onChange' })
+  } = useForm({ defaultValues: { contributionAreas: [], ...(savedData.parents || {}) }, mode: 'onChange' })
 
     const onSubmit = (data) => {
     saveApplicationSection(classId, 'parents', data)
@@ -148,9 +194,10 @@ function ClassParentDetails() {
                   maxLength={50}
                   {...register('motherQualification', {
                     pattern: {
-                    value: /^(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
+                    value: /^[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
                     message: 'Only letters, numbers, spaces and . & - are allowed',
                     },
+                    validate: (v) => !/^\d+$/.test(v || '') || /^\d{1,2}$/.test(v) || 'Number can be maximum 2 digits',
                   })}
                 />
                 {errors.motherQualification && <p className={errClass}>{errors.motherQualification.message}</p>}
@@ -162,9 +209,10 @@ function ClassParentDetails() {
                   maxLength={50}
                   {...register('fatherQualification', {
                     pattern: {
-                    value: /^(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
+                    value: /^[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
                       message: 'Only letters, numbers, spaces and . & - are allowed',
                     },
+                    validate: (v) => !/^\d+$/.test(v || '') || /^\d{1,2}$/.test(v) || 'Number can be maximum 2 digits',
                   })}
                 />
                 {errors.fatherQualification && <p className={errClass}>{errors.fatherQualification.message}</p>}
@@ -172,12 +220,19 @@ function ClassParentDetails() {
 
               <div className="sm:col-span-2">
                 <label className={labelClass}>Areas in which parent can contribute</label>
-                <select multiple className={`${inputClass} h-28`} {...register('contributionAreas')}>
-                  <option value="Cultural">CULTURAL</option>
-                  <option value="Medical">MEDICAL</option>
-                  <option value="Media">MEDIA</option>
-                  <option value="Academic">ACADEMIC</option>
-                </select>
+                <Controller
+                  name="contributionAreas"
+                  control={control}
+                  render={({ field }) => (
+                    <MultiSelect
+                      value={Array.isArray(field.value) ? field.value : []}
+                      onChange={field.onChange}
+                      options={CONTRIBUTION_OPTIONS}
+                      placeholder="Select one or more"
+                      className={inputClass}
+                    />
+                  )}
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Other area of interest</label>
