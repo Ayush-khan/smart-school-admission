@@ -269,10 +269,10 @@ function EnquiryModal({ onClose, onSubmitted }) {
         )}
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          <p className={labelClass}>Student Name {star}</p>
+          <p className={labelClass}>Student Name</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className={labelClass}>First Name</label>
+              <label className={labelClass}>First Name {star}</label>
               <input className={cls(showErr('firstName'))} data-invalid={Boolean(showErr('firstName'))} {...textProps('firstName', LIMITS.name)} />
               {fieldError('firstName')}
             </div>
