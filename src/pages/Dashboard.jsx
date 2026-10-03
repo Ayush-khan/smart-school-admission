@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import EnquiryModal from '../components/EnquiryModal'
 import logo from '../assets/evolvu-logo.webp'
-import { getClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
+import { getClasses, getEnquiryClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
@@ -26,14 +26,16 @@ function Dashboard() {
 
   const [forms, setForms] = useState([])
   const [loadingForms, setLoadingForms] = useState(true)
+  const [applications, setApplications] = useState([])
 
   // ASSUMPTION: no confirmed way to scope this to just the logged-in user's
   // own enquiries — see note in applicationService.js. Must be confirmed with
   // backend before this is trusted in production.
   const [enquiries, setEnquiries] = useState([])
   const [loadingEnquiries, setLoadingEnquiries] = useState(true)
+  const [enquiryClasses, setEnquiryClasses] = useState([])
 
-    const mountedRef = useRef(true)
+  const mountedRef = useRef(true)
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -61,12 +63,14 @@ function Dashboard() {
       }
       const result = await getDashboard(narId)
       const data = result.data ?? result
-      if (mountedRef.current && data) {
+            if (mountedRef.current && data) {
         setSummary({
           totalFormsRegistered: data.forms_count ?? 0,
           amountPaid: data.amount_paid ?? 0,
         })
+        setApplications(Array.isArray(data.applications) ? data.applications : [])
       }
+      
     } catch (err) {
       if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load dashboard summary.'))
     } finally {
@@ -79,6 +83,7 @@ function Dashboard() {
       if (!narId) return
       const result = await listOnlineForms({ nar_id: narId })
       const list = result.data ?? result
+      
       if (mountedRef.current) setForms(Array.isArray(list) ? list : [])
     } catch (err) {
       if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load your applications.'))
@@ -115,6 +120,12 @@ function Dashboard() {
   useEffect(() => {
     loadClasses()
     refreshCounts(false)
+    getEnquiryClasses()
+      .then((r) => {
+        const list = r?.data?.classes ?? []
+        if (mountedRef.current) setEnquiryClasses(Array.isArray(list) ? list : [])
+      })
+      .catch(() => {})
   }, [loadClasses, refreshCounts])
 
   // Refresh counts when the user comes back to this tab
@@ -179,6 +190,17 @@ function Dashboard() {
     return match ? formatClassLabel(match) : classId
   }
 
+  // The enquiries API returns the class NAME in "class" (e.g. "1", "Nursery"),
+  // not an id. If a class_id is ever sent, match it; otherwise show the name as is.
+  const getEnquiryClassLabel = (enquiry) => {
+    if (enquiry.class_id) {
+      const sameId = (c) => String(c.id ?? c.class_id) === String(enquiry.class_id)
+      const match = classes.find(sameId) ?? enquiryClasses.find(sameId)
+      if (match) return formatClassLabel(match)
+    }
+    return enquiry.class_name ?? enquiry.class ?? '—'
+  }
+
   const getFullName = (form) => {
     return [form.first_name, form.mid_name, form.last_name].filter(Boolean).join(' ')
   }
@@ -193,13 +215,23 @@ function Dashboard() {
     )
   }
 
+    // Payment info comes from the dashboard API (applications[]), matched by form_id.
+  const getAppInfo = (form) => applications.find((a) => String(a.form_id) === String(form.form_id))
+
+  const getPaymentStatus = (form) =>
+    getAppInfo(form)?.payment_status ?? form.payment_status ?? form.paymentStatus ?? null
+
   const isPaid = (form) => {
-    const status = (form.payment_status ?? '').toString().toLowerCase()
-    return status === 'success'
+    const info = getAppInfo(form)
+    const db = (info?.payment_db_status ?? '').toString().trim().toLowerCase()
+    const status = (getPaymentStatus(form) ?? '').toString().trim().toLowerCase()
+    return db === 's' || status === 'success'
   }
 
+  const getPaymentLabel = (form) => getPaymentStatus(form) ?? '—'
+
   return (
-       <div className="min-h-screen bg-page">
+    <div className="min-h-screen bg-page">
       <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-1">
           <div className="flex items-center gap-3">
@@ -224,10 +256,10 @@ function Dashboard() {
       <main className="max-w-5xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Apply for New Admission card */}
-           <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-xl p-6 text-white relative z-30 border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/50 hover:ring-2 hover:ring-brass" ref={dropdownRef}>
+          <div className="bg-gradient-to-br from-navy to-navy-light rounded-xl shadow-xl p-6 text-white relative z-30 border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/50 hover:ring-2 hover:ring-brass" ref={dropdownRef}>
             <h2 className="text-lg font-semibold mb-4 text-center tracking-tight">Apply For New Admission</h2>
 
-                      <button
+            <button
               type="button"
               onClick={() => setDropdownOpen((prev) => !prev)}
               disabled={loadingClasses}
@@ -273,7 +305,7 @@ function Dashboard() {
           </div>
 
           {/* Forms + Enquiries count card */}
-         <div className="bg-white rounded-xl shadow-xl p-6 text-center border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/30 hover:ring-2 hover:ring-brass">
+          <div className="bg-white rounded-xl shadow-xl p-6 text-center border-t-4 border-brass transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1] hover:shadow-2xl hover:shadow-navy/30 hover:ring-2 hover:ring-brass">
             <h2 className="text-lg font-semibold text-navy mb-3">Forms</h2>
             <div className="flex items-center justify-center gap-6">
               <div>
@@ -301,7 +333,7 @@ function Dashboard() {
           </div>
         </div>
 
-                {/* Tabs */}
+        {/* Tabs */}
         <div className="flex gap-2 mt-8">
           <button
             type="button"
@@ -328,7 +360,7 @@ function Dashboard() {
         </div>
 
         {activeTab === 'applications' && (
-        <div
+          <div
             className="bg-white rounded-xl shadow-md overflow-auto table-scroll tab-panel"
             style={{ maxHeight: 'max(16rem, calc(100dvh - 24rem))' }}
           >
@@ -359,18 +391,18 @@ function Dashboard() {
                     </td>
                   </tr>
                 ) : (
-                 forms.map((form, i) => (
-                      <tr
-                        key={form.form_id}
-                        className="border-t border-slate-100 row-in hover:bg-slate-50 transition-colors"
-                        style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
-                      >
+                  forms.map((form, i) => (
+                    <tr
+                      key={form.form_id}
+                      className="border-t border-slate-100 row-in hover:bg-slate-50 transition-colors"
+                      style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                    >
                       <td className="px-4 py-3">{form.form_id}</td>
                       <td className="px-4 py-3">{getFullName(form)}</td>
                       <td className="px-4 py-3">{getClassLabel(form.class_id)}</td>
                       <td className="px-4 py-3">{form.admission_form_status}</td>
                       <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
-                      <td className="px-4 py-3">{form.payment_status ?? '—'}</td>
+                      <td className="px-4 py-3">{getPaymentLabel(form)}</td>
                       <td className="px-4 py-3">
                         {!isPaid(form) && (
                           <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
@@ -398,7 +430,7 @@ function Dashboard() {
         )}
 
         {activeTab === 'enquiries' && (
-         <div
+          <div
             className="bg-white rounded-xl shadow-md overflow-auto table-scroll tab-panel"
             style={{ maxHeight: 'max(16rem, calc(100dvh - 24rem))' }}
           >
@@ -425,15 +457,15 @@ function Dashboard() {
                     </td>
                   </tr>
                 ) : (
-                enquiries.map((enquiry, i) => (
-                      <tr
-                        key={enquiry.enquiry_id ?? enquiry.id}
-                        className="border-t border-slate-100 row-in hover:bg-slate-50 transition-colors"
-                        style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
-                      >
-                      <td className="px-4 py-3">{enquiry.enquiry_id ?? enquiry.id}</td>
+                  enquiries.map((enquiry, i) => (
+                    <tr
+                      key={enquiry.enquiry_id ?? enquiry.id}
+                      className="border-t border-slate-100 row-in hover:bg-slate-50 transition-colors"
+                      style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                    >
+                      <td className="px-4 py-3">{enquiry.enquiry_number ?? enquiry.enquiry_id ?? enquiry.id}</td>
                       <td className="px-4 py-3">{getEnquiryStudentName(enquiry)}</td>
-                      <td className="px-4 py-3">{getClassLabel(enquiry.class_id)}</td>
+                      <td className="px-4 py-3">{getEnquiryClassLabel(enquiry)}</td>
                       <td className="px-4 py-3">{enquiry.status ?? enquiry.enquiry_status ?? '—'}</td>
                     </tr>
                   ))
@@ -444,12 +476,12 @@ function Dashboard() {
         )}
       </main>
 
-        {showEnquiry && (
-      <EnquiryModal
-        onClose={() => setShowEnquiry(false)}
-        onSubmitted={() => loadEnquiries(true)}
-      />
-    )}
+      {showEnquiry && (
+        <EnquiryModal
+          onClose={() => setShowEnquiry(false)}
+          onSubmitted={() => loadEnquiries(true)}
+        />
+      )}
     </div>
   )
 }
