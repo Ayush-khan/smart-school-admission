@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import EnquiryModal from '../components/EnquiryModal'
@@ -7,6 +7,7 @@ import { getClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listA
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
+import { formatClassLabel } from '../utils/classLabel'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -32,77 +33,98 @@ function Dashboard() {
   const [enquiries, setEnquiries] = useState([])
   const [loadingEnquiries, setLoadingEnquiries] = useState(true)
 
+    const mountedRef = useRef(true)
   useEffect(() => {
-    let cancelled = false
-
-    async function loadClasses() {
-      try {
-        const result = await getClasses()
-        const list = result.data ?? result
-        if (!cancelled) setClasses(Array.isArray(list) ? list : [])
-      } catch (err) {
-        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load classes.'))
-      } finally {
-        if (!cancelled) setLoadingClasses(false)
-      }
-    }
-
-    async function loadSummary() {
-      try {
-        if (!narId) {
-          throw new Error('Your session has expired. Please log in again.')
-        }
-        const result = await getDashboard(narId)
-        const data = result.data ?? result
-        if (!cancelled && data) {
-          setSummary({
-            totalFormsRegistered: data.forms_count ?? 0,
-            amountPaid: data.amount_paid ?? 0,
-          })
-        }
-      } catch (err) {
-        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load dashboard summary.'))
-      } finally {
-        if (!cancelled) setLoadingSummary(false)
-      }
-    }
-
-    async function loadForms() {
-      try {
-        if (!narId) return
-        const result = await listOnlineForms({ nar_id: narId })
-        const list = result.data ?? result
-        if (!cancelled) setForms(Array.isArray(list) ? list : [])
-      } catch (err) {
-        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load your applications.'))
-      } finally {
-        if (!cancelled) setLoadingForms(false)
-      }
-    }
-
-    async function loadEnquiries() {
-      try {
-        // ASSUMPTION: passing nar_id/contact as filters — UNCONFIRMED whether
-        // backend actually honors these. Verify via Network tab before trusting
-        // this count or table for anything user-facing.
-        const result = await listAdmissionEnquiries({ nar_id: narId, contact })
-        const list = result?.data?.enquiries ?? result?.data ?? []
-        if (!cancelled) setEnquiries(Array.isArray(list) ? list : [])
-      } catch (err) {
-        if (!cancelled) toast.error(getErrorMessage(err, 'Could not load enquiries.'))
-      } finally {
-        if (!cancelled) setLoadingEnquiries(false)
-      }
-    }
-
-    loadClasses()
-    loadSummary()
-    loadForms()
-    loadEnquiries()
+    mountedRef.current = true
     return () => {
-      cancelled = true
+      mountedRef.current = false
+    }
+  }, [])
+
+  const loadClasses = useCallback(async () => {
+    try {
+      const result = await getClasses()
+      const list = result.data ?? result
+      if (mountedRef.current) setClasses(Array.isArray(list) ? list : [])
+    } catch (err) {
+      if (mountedRef.current) toast.error(getErrorMessage(err, 'Could not load classes.'))
+    } finally {
+      if (mountedRef.current) setLoadingClasses(false)
+    }
+  }, [])
+
+  // silent = true on refreshes, so no error toast and no loading flicker
+  const loadSummary = useCallback(async (silent = false) => {
+    try {
+      if (!narId) {
+        throw new Error('Your session has expired. Please log in again.')
+      }
+      const result = await getDashboard(narId)
+      const data = result.data ?? result
+      if (mountedRef.current && data) {
+        setSummary({
+          totalFormsRegistered: data.forms_count ?? 0,
+          amountPaid: data.amount_paid ?? 0,
+        })
+      }
+    } catch (err) {
+      if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load dashboard summary.'))
+    } finally {
+      if (mountedRef.current) setLoadingSummary(false)
+    }
+  }, [narId])
+
+  const loadForms = useCallback(async (silent = false) => {
+    try {
+      if (!narId) return
+      const result = await listOnlineForms({ nar_id: narId })
+      const list = result.data ?? result
+      if (mountedRef.current) setForms(Array.isArray(list) ? list : [])
+    } catch (err) {
+      if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load your applications.'))
+    } finally {
+      if (mountedRef.current) setLoadingForms(false)
+    }
+  }, [narId])
+
+  const loadEnquiries = useCallback(async (silent = false) => {
+    try {
+      // ASSUMPTION: passing nar_id/contact as filters — UNCONFIRMED whether
+      // backend actually honors these. Verify via Network tab.
+      const result = await listAdmissionEnquiries({ nar_id: narId, contact })
+      const d = result?.data
+      const list = Array.isArray(d) ? d : d?.enquiries ?? d?.data ?? []
+      if (mountedRef.current) setEnquiries(Array.isArray(list) ? list : [])
+    } catch (err) {
+      if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load enquiries.'))
+    } finally {
+      if (mountedRef.current) setLoadingEnquiries(false)
     }
   }, [narId, contact])
+
+  const refreshCounts = useCallback(
+    (silent = false) => {
+      loadSummary(silent)
+      loadForms(silent)
+      loadEnquiries(silent)
+    },
+    [loadSummary, loadForms, loadEnquiries],
+  )
+
+  // First load
+  useEffect(() => {
+    loadClasses()
+    refreshCounts(false)
+  }, [loadClasses, refreshCounts])
+
+  // Refresh counts when the user comes back to this tab
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshCounts(true)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [refreshCounts])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -154,7 +176,7 @@ function Dashboard() {
 
   const getClassLabel = (classId) => {
     const match = classes.find((c) => String(c.id ?? c.class_id) === String(classId))
-    return match?.label ?? match?.class_name ?? match?.name ?? classId
+    return match ? formatClassLabel(match) : classId
   }
 
   const getFullName = (form) => {
@@ -242,7 +264,7 @@ function Dashboard() {
                       className="group relative w-full text-left px-4 py-3 text-sm font-medium border-b border-slate-100 transition-all duration-200 hover:bg-slate-50 hover:pl-6 hover:text-navy"
                     >
                       <span className="absolute left-0 top-0 h-full w-1 bg-brass scale-y-0 group-hover:scale-y-100 transition-transform duration-200" />
-                      {c.label ?? c.class_name ?? c.name}
+                      {formatClassLabel(c)}
                     </button>
                   </div>
                 ))
@@ -422,7 +444,12 @@ function Dashboard() {
         )}
       </main>
 
-      {showEnquiry && <EnquiryModal onClose={() => setShowEnquiry(false)} />}
+        {showEnquiry && (
+      <EnquiryModal
+        onClose={() => setShowEnquiry(false)}
+        onSubmitted={() => loadEnquiries(true)}
+      />
+    )}
     </div>
   )
 }

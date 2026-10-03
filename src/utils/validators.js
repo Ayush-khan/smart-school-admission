@@ -37,18 +37,44 @@ export const mobileRules = (required = false) => ({
   pattern: { value: MOBILE_REGEX, message: 'Enter a valid mobile number.' },
 })
 
-// Date of birth: real date, not in the future, not before DOB_MIN_YEAR.
-export const DOB_MIN_YEAR = 2000
+// Date of birth window comes from the backend per class (age_start_date / age_end_date).
+// If either one is null, fall back to the old default window: 2 to 16 years old.
 export const todayISO = () => new Date().toISOString().split('T')[0]
 
-export const dobRules = {
-  required: 'Required',
-  validate: (value) => {
-    const date = new Date(value)
-    const valid =
-      !Number.isNaN(date.getTime()) &&
-      date <= new Date() &&
-      date.getFullYear() >= DOB_MIN_YEAR
-    return valid || 'Enter a valid date of birth.'
-  },
+const pad = (n) => String(n).padStart(2, '0')
+const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+const yearsAgoISO = (n) => {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - n)
+  return toISO(d)
 }
+const isoOrEmpty = (v) => /^(\d{4}-\d{2}-\d{2})/.exec(v || '')?.[1] ?? ''
+
+export function getDobBounds(cls) {
+  const today = toISO(new Date())
+  const min = isoOrEmpty(cls?.age_start_date) || yearsAgoISO(16)
+  let max = isoOrEmpty(cls?.age_end_date) || yearsAgoISO(2)
+  if (max > today) max = today // a birth date can never be in the future
+  return { min, max }
+}
+
+export const formatDMY = (iso) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '')
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : ''
+}
+
+// Returns '' when valid, otherwise the error message.
+export function checkDob(value, { min, max }) {
+  const date = new Date(value)
+  if (!value || Number.isNaN(date.getTime())) return 'Enter a valid date of birth.'
+  if (value > toISO(new Date())) return 'Date of birth cannot be in the future.'
+  if (value < min || value > max) {
+    return `Date of birth must be between ${formatDMY(min)} and ${formatDMY(max)} for this class.`
+  }
+  return ''
+}
+
+export const dobRulesFor = (bounds) => ({
+  required: 'Required',
+  validate: (value) => checkDob(value, bounds) || true,
+})

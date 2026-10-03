@@ -10,7 +10,8 @@ import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import CustomSelect from '../components/CustomSelect'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-import { nameRules, dobRules, todayISO, DOB_MIN_YEAR } from '../utils/validators'
+import { nameRules, dobRulesFor, getDobBounds, formatDMY } from '../utils/validators'
+import { formatClassLabel } from '../utils/classLabel'
 
 function ClassStudentDetails() {
   const navigate = useNavigate()
@@ -32,7 +33,7 @@ function ClassStudentDetails() {
     getClasses()
       .then((result) => {
         const selected = (result.data ?? result).find((item) => String(item.class_id ?? item.id) === String(classId))
-        if (selected) setClassData({ label: selected.label ?? selected.class_name ?? selected.name })
+        if (selected) setClassData({ label: formatClassLabel(selected), dobBounds: getDobBounds(selected) })
       })
       .finally(() => setLoadingClass(false))
   }, [classId])
@@ -104,7 +105,16 @@ function ClassStudentDetails() {
 
               <div>
                 <label className={labelClass}>{reqStar} Date of Birth</label>
-                <input type="date" min={`${DOB_MIN_YEAR}-01-01`} max={todayISO()} className={inputClass} {...register('dob', dobRules)} />
+                <input
+                  type="date"
+                  min={classData.dobBounds.min}
+                  max={classData.dobBounds.max}
+                  className={inputClass}
+                  {...register('dob', dobRulesFor(classData.dobBounds))}
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Allowed: {formatDMY(classData.dobBounds.min)} to {formatDMY(classData.dobBounds.max)}
+                </p>
                 {errors.dob && <p className={errClass}>{errors.dob.message}</p>}
               </div>
               <div>

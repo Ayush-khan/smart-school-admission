@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
+import { getClasses, getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
-import { nameRules, mobileRules, pincodeRules, addressRules, DOB_MIN_YEAR } from '../utils/validators'
+import { nameRules, mobileRules, pincodeRules, addressRules, getDobBounds, checkDob, formatDMY } from '../utils/validators'
+import { formatClassLabel } from '../utils/classLabel'
 import DateInput from './DateInput'
+import { getSessionInfo } from '../utils/session'
 
 // ---- Validation rules (same rules as the application form) -------------------------------
 const NAME_REGEX = nameRules('name').pattern.value // letters (any language) + spaces
@@ -16,11 +18,6 @@ const SCHOOL_REGEX = /^[\p{L}\p{N}][\p{L}\p{M}\p{N}\s.,'\u2019&()/-]*$/u
 const LIMITS = { name: 100, parent: 100, email: 100, school: 100, address: 250, message: 500 }
 
 const clean = (s) => s.trim().replace(/\s+/g, ' ')
-const localTodayISO = () => {
-  const d = new Date()
-  const p = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
 
 const EMPTY = {
   firstName: '',
@@ -41,7 +38,7 @@ const EMPTY = {
 }
 
 // Returns { fieldName: 'message' } for every invalid field. Empty object = form is valid.
-function validateEnquiry(v, dobText) {
+function validateEnquiry(v, dobText, dobBounds) {
   const e = {}
   const optionalName = (key, label) => {
     const val = clean(v[key])
@@ -58,8 +55,10 @@ function validateEnquiry(v, dobText) {
   // Date of birth
   if (!dobText) e.dob = 'Required'
   else if (!v.dob) e.dob = 'Enter a valid date of birth.'
-  else if (v.dob > localTodayISO()) e.dob = 'Date of birth cannot be in the future.'
-  else if (Number(v.dob.slice(0, 4)) < DOB_MIN_YEAR) e.dob = 'Enter a valid date of birth.'
+  else {
+    const dobErr = checkDob(v.dob, dobBounds)
+    if (dobErr) e.dob = dobErr
+  }
 
   if (!v.gender) e.gender = 'Required'
   if (!v.classId) e.classId = 'Required'
@@ -99,6 +98,7 @@ function EnquiryModal({ onClose, onSubmitted }) {
   const [submitted, setSubmitted] = useState(false)
   const [classes, setClasses] = useState([])
   const [genders, setGenders] = useState([])
+  const [mainClasses, setMainClasses] = useState([])
   const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -118,11 +118,15 @@ function EnquiryModal({ onClose, onSubmitted }) {
   // Classes + genders from the server. A failure is shown to the user (with Retry).
   const loadOptions = async () => {
     setLoadError('')
-    const [classRes, genderRes] = await Promise.allSettled([getEnquiryClasses(), getEnquiryGenders()])
+    const [classRes, genderRes, mainRes] = await Promise.allSettled([getEnquiryClasses(), getEnquiryGenders(), getClasses()])
 
     if (classRes.status === 'fulfilled') {
       const list = classRes.value?.data?.classes ?? []
       setClasses(Array.isArray(list) ? list : [])
+    }
+    if (mainRes.status === 'fulfilled') {
+      const list = mainRes.value?.data ?? mainRes.value
+      setMainClasses(Array.isArray(list) ? list : [])
     }
     if (genderRes.status === 'fulfilled') {
       const list = genderRes.value?.data?.genders ?? []
@@ -156,7 +160,18 @@ function EnquiryModal({ onClose, onSubmitted }) {
     onBlur: () => touch(key),
   })
 
-  const errors = validateEnquiry(v, dobText)
+  // DOB window for the selected class. Uses the enquiry class's own dates if the API sends them,
+  // otherwise the same class from the main classes API. Null dates fall back to defaults.
+  const selectedClass = classes.find((c) => String(c.id ?? c.class_id) === String(v.classId))
+  const selectedMain = mainClasses.find((c) => String(c.id ?? c.class_id) === String(v.classId))
+  const dobBounds = getDobBounds({
+    age_start_date: selectedClass?.age_start_date ?? selectedMain?.age_start_date,
+    age_end_date: selectedClass?.age_end_date ?? selectedMain?.age_end_date,
+  })
+
+  const selectedMainFor = (c) => mainClasses.find((m) => String(m.id ?? m.class_id) === String(c.id ?? c.class_id)) ?? {}
+
+  const errors = validateEnquiry(v, dobText, dobBounds)
   const showErr = (key) => (submitted || touched[key]) && errors[key]
   const parentsErr = (submitted || touched.fatherName || touched.motherName) && errors.parents
 
@@ -198,6 +213,7 @@ function EnquiryModal({ onClose, onSubmitted }) {
         dob: v.dob,
         gender: v.gender,
         class_id: v.classId,
+        nar_id: getSessionInfo().narId,
         father_name: clean(v.fatherName),
         mother_name: clean(v.motherName),
         contact_no: v.contact.trim(),
@@ -284,9 +300,14 @@ function EnquiryModal({ onClose, onSubmitted }) {
                 if (!text || text.length === 10) touch('dob')
                 setError('')
               }}
-              min={`${DOB_MIN_YEAR}-01-01`}
-              max={localTodayISO()}
+              min={dobBounds.min}
+              max={dobBounds.max}
             />
+            {v.classId && (
+              <p className="text-xs text-slate-400 mt-1">
+                Allowed: {formatDMY(dobBounds.min)} to {formatDMY(dobBounds.max)}
+              </p>
+            )}
             {fieldError('dob')}
           </div>
 
@@ -328,7 +349,7 @@ function EnquiryModal({ onClose, onSubmitted }) {
                 <option value="">Select class</option>
                 {classes.map((c) => (
                   <option key={c.id ?? c.class_id} value={c.id ?? c.class_id}>
-                    {c.label ?? c.class_name ?? c.name}
+                    {formatClassLabel({ ...selectedMainFor(c), ...c })}
                   </option>
                 ))}
               </select>
