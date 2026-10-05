@@ -404,12 +404,18 @@ function Dashboard() {
                       <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
                       <td className="px-4 py-3">{getPaymentLabel(form)}</td>
                       <td className="px-4 py-3">
-                        {!isPaid(form) && (
-                          <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
-                            💳
-                          </button>
-                        )}
-                      </td>
+                      {isPaid(form) ? (
+                        <span className="inline-flex items-center text-green-600" title="Payment completed" aria-label="Payment completed">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
+                          💳
+                        </button>
+                      )}
+                    </td>
                       <td className="px-4 py-3">
                         {isPaid(form) ? (
                           <button onClick={() => handleDownloadForm(form)} className="text-slate-600 hover:text-slate-800" title="Download">
