@@ -10,6 +10,17 @@ export async function getClasses() {
 }
 
 // ---------------------------------------------------------------------------
+// Get Classes For User — GET /api/admission/classes/for-user?nar_id=
+// Classes this user is allowed to apply to (publish = Y, date-window checked)
+// ---------------------------------------------------------------------------
+export async function getClassesForUser(narId) {
+  const response = await apiClient.get('/api/admission/classes/for-user', {
+    params: { nar_id: narId },
+  })
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
 // Get Form Fee — GET /api/admission/form-fee
 // ---------------------------------------------------------------------------
 export async function getFormFee(params = {}) {

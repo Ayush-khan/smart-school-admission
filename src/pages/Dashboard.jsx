@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import EnquiryModal from '../components/EnquiryModal'
 import logo from '../assets/evolvu-logo.webp'
-import { getClasses, getEnquiryClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
-import { getErrorMessage } from '../services/apiHelpers'
+import { getClasses, getClassesForUser, getEnquiryClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
 import { formatClassLabel } from '../utils/classLabel'
@@ -20,6 +19,9 @@ function Dashboard() {
 
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
+
+  const [userClasses, setUserClasses] = useState([])
+  const [loadingUserClasses, setLoadingUserClasses] = useState(true)
 
   const [summary, setSummary] = useState({ totalFormsRegistered: 0, amountPaid: 0 })
   const [loadingSummary, setLoadingSummary] = useState(true)
@@ -54,6 +56,21 @@ function Dashboard() {
       if (mountedRef.current) setLoadingClasses(false)
     }
   }, [])
+
+    const loadUserClasses = useCallback(async () => {
+    try {
+      if (!narId) {
+        throw new Error('Your session has expired. Please log in again.')
+      }
+      const result = await getClassesForUser(narId)
+      const list = result.data ?? result
+      if (mountedRef.current) setUserClasses(Array.isArray(list) ? list : [])
+    } catch (err) {
+      if (mountedRef.current) toast.error(getErrorMessage(err, 'Could not load classes.'))
+    } finally {
+      if (mountedRef.current) setLoadingUserClasses(false)
+    }
+  }, [narId])
 
   // silent = true on refreshes, so no error toast and no loading flicker
   const loadSummary = useCallback(async (silent = false) => {
@@ -117,8 +134,9 @@ function Dashboard() {
   )
 
   // First load
-  useEffect(() => {
+    useEffect(() => {
     loadClasses()
+    loadUserClasses()
     refreshCounts(false)
     getEnquiryClasses()
       .then((r) => {
@@ -126,7 +144,7 @@ function Dashboard() {
         if (mountedRef.current) setEnquiryClasses(Array.isArray(list) ? list : [])
       })
       .catch(() => {})
-  }, [loadClasses, refreshCounts])
+  }, [loadClasses, loadUserClasses, refreshCounts])
 
   // Refresh counts when the user comes back to this tab
   useEffect(() => {
@@ -262,13 +280,13 @@ function Dashboard() {
             <button
               type="button"
               onClick={() => setDropdownOpen((prev) => !prev)}
-              disabled={loadingClasses}
+              disabled={loadingUserClasses}
               aria-expanded={dropdownOpen}
               className={`w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-navy text-sm font-medium transition-all duration-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brass disabled:opacity-60 ${
                 dropdownOpen ? 'ring-2 ring-brass' : ''
               }`}
             >
-              {loadingClasses ? 'Loading classes...' : 'SELECT CLASS'}
+              {loadingUserClasses ? 'Loading classes...' : 'SELECT CLASS'}
               <span className={`text-brass transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}>▾</span>
             </button>
 
@@ -279,10 +297,10 @@ function Dashboard() {
                   : 'opacity-0 -translate-y-2 scale-95 invisible pointer-events-none'
               }`}
             >
-              {classes.length === 0 ? (
+              {userClasses.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-slate-500">No classes available.</p>
               ) : (
-                classes.map((c, i) => (
+                userClasses.map((c, i) => (
                   <div
                     key={c.id ?? c.class_id}
                     className={`transition-all duration-300 ease-out motion-reduce:transition-none ${
