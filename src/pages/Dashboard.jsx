@@ -405,7 +405,7 @@ function Dashboard() {
                 ) : forms.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
-                      No admission forms yet.
+                      No admission forms have been submitted yet.
                     </td>
                   </tr>
                 ) : (
@@ -477,7 +477,7 @@ function Dashboard() {
                 ) : enquiries.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                      No enquiries yet.
+                     No enquiries have been submitted yet.
                     </td>
                   </tr>
                 ) : (
