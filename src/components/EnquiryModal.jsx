@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { getClasses, getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
+import { getEnquiryClasses, getEnquiryGenders, submitEnquiry } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { nameRules, mobileRules, pincodeRules, addressRules, getDobBounds, checkDob, formatDMY } from '../utils/validators'
 import { formatClassLabel } from '../utils/classLabel'
@@ -16,6 +16,13 @@ const EMAIL_REGEX = /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z
 const SCHOOL_REGEX = /^[\p{L}\p{N}][\p{L}\p{M}\p{N}\s.,'\u2019&()/-]*$/u
 
 const LIMITS = { name: 100, parent: 100, email: 100, school: 100, address: 250, message: 500 }
+
+// "1 (Shift 2) - 2026-2027": class + shift + academic year, all from the backend.
+const classOptionLabel = (c) => {
+  const label = formatClassLabel(c)
+  const year = c?.academic_yr ?? c?.academic_year
+  return year ? `${label} - ${year}` : label
+}
 
 const clean = (s) => s.trim().replace(/\s+/g, ' ')
 
@@ -91,6 +98,69 @@ function validateEnquiry(v, dobText, dobBounds) {
   return e
 }
 
+// Class dropdown that always stays inside the form width (a native <select> list can
+// overflow the screen on mobile). Long labels wrap to the next line.
+function ClassPicker({ value, options, onChange, onBlur, invalid }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false)
+        onBlur?.()
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('touchstart', onDown)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('touchstart', onDown)
+    }
+  }, [onBlur])
+
+  const selected = options.find((o) => String(o.value) === String(value))
+
+  return (
+    <div className="relative" ref={ref} data-invalid={Boolean(invalid)}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full flex items-center justify-between gap-2 border rounded-lg px-3 py-2 text-sm bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 ${invalid ? 'border-red-500' : 'border-slate-300'}`}
+      >
+        <span className={`min-w-0 break-words ${selected ? 'text-slate-800' : 'text-slate-400'}`}>
+          {selected ? selected.label : 'Select class'}
+        </span>
+        <span className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-56 overflow-y-auto"
+        >
+          {options.map((o) => (
+            <li key={o.value} role="option" aria-selected={String(o.value) === String(value)}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(String(o.value))
+                  setOpen(false)
+                }}
+                className={`w-full text-left px-4 py-2 text-sm break-words border-b border-slate-50 last:border-0 hover:bg-slate-100 ${String(o.value) === String(value) ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+              >
+                {o.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function EnquiryModal({ onClose, onSubmitted }) {
   const [v, setV] = useState(EMPTY)
   const [dobText, setDobText] = useState('')
@@ -98,7 +168,6 @@ function EnquiryModal({ onClose, onSubmitted }) {
   const [submitted, setSubmitted] = useState(false)
   const [classes, setClasses] = useState([])
   const [genders, setGenders] = useState([])
-  const [mainClasses, setMainClasses] = useState([])
   const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -118,15 +187,11 @@ function EnquiryModal({ onClose, onSubmitted }) {
   // Classes + genders from the server. A failure is shown to the user (with Retry).
   const loadOptions = async () => {
     setLoadError('')
-    const [classRes, genderRes, mainRes] = await Promise.allSettled([getEnquiryClasses(), getEnquiryGenders(), getClasses()])
+    const [classRes, genderRes] = await Promise.allSettled([getEnquiryClasses(), getEnquiryGenders()])
 
     if (classRes.status === 'fulfilled') {
       const list = classRes.value?.data?.classes ?? []
       setClasses(Array.isArray(list) ? list : [])
-    }
-    if (mainRes.status === 'fulfilled') {
-      const list = mainRes.value?.data ?? mainRes.value
-      setMainClasses(Array.isArray(list) ? list : [])
     }
     if (genderRes.status === 'fulfilled') {
       const list = genderRes.value?.data?.genders ?? []
@@ -160,16 +225,13 @@ function EnquiryModal({ onClose, onSubmitted }) {
     onBlur: () => touch(key),
   })
 
-  // DOB window for the selected class. Uses the enquiry class's own dates if the API sends them,
-  // otherwise the same class from the main classes API. Null dates fall back to defaults.
+  // DOB window for the selected class. Uses the enquiry class's own dates if the API sends them;
+  // null/missing dates fall back to the defaults.
   const selectedClass = classes.find((c) => String(c.id ?? c.class_id) === String(v.classId))
-  const selectedMain = mainClasses.find((c) => String(c.id ?? c.class_id) === String(v.classId))
   const dobBounds = getDobBounds({
-    age_start_date: selectedClass?.age_start_date ?? selectedMain?.age_start_date,
-    age_end_date: selectedClass?.age_end_date ?? selectedMain?.age_end_date,
+    age_start_date: selectedClass?.age_start_date,
+    age_end_date: selectedClass?.age_end_date,
   })
-
-  const selectedMainFor = (c) => mainClasses.find((m) => String(m.id ?? m.class_id) === String(c.id ?? c.class_id)) ?? {}
 
   const errors = validateEnquiry(v, dobText, dobBounds)
   const showErr = (key) => (submitted || touched[key]) && errors[key]
@@ -336,23 +398,19 @@ function EnquiryModal({ onClose, onSubmitted }) {
 
             <div>
               <label className={labelClass}>Class {star}</label>
-              <select
-                className={cls(showErr('classId'))}
-                data-invalid={Boolean(showErr('classId'))}
+              <ClassPicker
+                invalid={showErr('classId')}
                 value={v.classId}
-                onChange={(e) => {
-                  set('classId', e.target.value)
+                options={classes.map((c) => ({
+                  value: c.id ?? c.class_id,
+                  label: classOptionLabel(c),
+                }))}
+                onChange={(val) => {
+                  set('classId', val)
                   setError('')
                 }}
                 onBlur={() => touch('classId')}
-              >
-                <option value="">Select class</option>
-                {classes.map((c) => (
-                  <option key={c.id ?? c.class_id} value={c.id ?? c.class_id}>
-                    {formatClassLabel({ ...selectedMainFor(c), ...c })}
-                  </option>
-                ))}
-              </select>
+              />
               {fieldError('classId')}
             </div>
           </div>

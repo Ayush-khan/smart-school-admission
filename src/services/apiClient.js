@@ -1,10 +1,12 @@
 import axios from 'axios'
+import { getSchoolCode, getSchoolBasePath } from '../utils/schoolCode'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'X-School-Domain': window.location.hostname,   // <-- ye nayi line
+    ...(getSchoolCode() && { 'X-School-Code': getSchoolCode() }),
   },
 })
 
@@ -26,7 +28,7 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !isAuthCall) {
       localStorage.removeItem('authToken')
-      window.location.href = '/login'
+      window.location.href = `${getSchoolBasePath()}/login`
     }
     return Promise.reject(error)
   }
