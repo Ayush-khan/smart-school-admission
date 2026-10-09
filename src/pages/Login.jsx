@@ -7,10 +7,12 @@ import { getErrorMessage } from '../services/apiHelpers'
 import { saveSessionInfo, startResendCooldown, getResendRemaining } from '../utils/session'
 import loginVideo from '../assets/Login_video_Students.mp4'
 
-// Ask the backend: does POST /api/admission/registration send the first OTP by itself?
+// Does POST /api/admission/registration send the first OTP by itself?
 //   true  -> the backend sends it, the frontend only starts the countdown.
 //   false -> the frontend calls send-otp after registration, then starts the countdown.
-const REGISTRATION_SENDS_OTP = true
+// Set to false because new users were not receiving an OTP. If the backend registration API
+// ALSO sends an OTP, the user gets two SMS - then ask the backend developer and set this back to true.
+const REGISTRATION_SENDS_OTP = false
 
 function Login() {
   const [mode, setMode] = useState('mobile') // 'mobile' or 'email'
