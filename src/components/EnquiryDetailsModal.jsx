@@ -51,7 +51,7 @@ function EnquiryDetailsModal({ enquiry, classLabel, academicYear, onClose }) {
     ['Pincode', pick(enquiry, 'pincode')],
     ['Sibling in this school', siblingText],
     ['Query', pick(enquiry, 'message', 'query')],
-    ['Submitted On', formatDMY(pick(enquiry, 'created_at', 'enquiry_date')) || ''],
+    ['Enquiry Date', formatDMY(pick(enquiry, 'enquiry_date', 'created_at', 'date')) || ''],
   ].filter(([, value]) => value !== '' && value !== undefined && value !== null)
 
   return (

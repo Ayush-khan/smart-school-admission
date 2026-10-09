@@ -94,8 +94,8 @@ function ClassStudentDetails() {
                 {errors.middleName && <p className={errClass}>{errors.middleName.message}</p>}
               </div>
               <div>
-                <label className={labelClass}>{reqStar} Last Name</label>
-                <input className={inputClass} {...register('lastName', nameRules('last name', true))} />
+                <label className={labelClass}>Last Name</label>
+                <input className={inputClass} {...register('lastName', nameRules('last name'))} />
                 {errors.lastName && <p className={errClass}>{errors.lastName.message}</p>}
               </div>
               <div>

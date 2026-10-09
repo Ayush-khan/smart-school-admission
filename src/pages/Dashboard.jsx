@@ -9,6 +9,7 @@ import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
 import { formatClassLabel } from '../utils/classLabel'
+import { formatDMY } from '../utils/validators'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -248,6 +249,11 @@ function Dashboard() {
     const year = getEnquiryAcademicYear(enquiry)
     return year && year !== '—' ? `${label} (${year})` : label
   }
+
+  // Date the enquiry was made, shown as dd/mm/yyyy. The enquiries API should send it as
+  // enquiry_date (or created_at / date) in yyyy-mm-dd format; '—' until it does.
+  const getEnquiryDate = (enquiry) =>
+    formatDMY(enquiry.enquiry_date ?? enquiry.created_at ?? enquiry.date ?? '') || '—'
 
   const getFullName = (form) => {
     return [form.first_name, form.mid_name, form.last_name].filter(Boolean).join(' ')
@@ -494,6 +500,7 @@ function Dashboard() {
                   <th className="px-4 py-3 font-semibold">Enquiry No</th>
                   <th className="px-4 py-3 font-semibold">Student Name</th>
                   <th className="px-4 py-3 font-semibold">Class</th>
+                  <th className="px-4 py-3 font-semibold">Enquiry Date</th>
                   <th className="px-4 py-3 font-semibold">Enquiry Status</th>
                   <th className="px-4 py-3 font-semibold">Action</th>
                 </tr>
@@ -501,13 +508,13 @@ function Dashboard() {
               <tbody>
                 {loadingEnquiries ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
                       Loading enquiries...
                     </td>
                   </tr>
                 ) : enquiries.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
                      No enquiries have been submitted yet.
                     </td>
                   </tr>
@@ -521,6 +528,7 @@ function Dashboard() {
                       <td className="px-4 py-3">{enquiry.enquiry_number ?? enquiry.enquiry_id ?? enquiry.id}</td>
                       <td className="px-4 py-3">{getEnquiryStudentName(enquiry)}</td>
                       <td className="px-4 py-3">{getEnquiryClassWithYear(enquiry)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{getEnquiryDate(enquiry)}</td>
                       <td className="px-4 py-3">{enquiry.status ?? enquiry.enquiry_status ?? '—'}</td>
                       <td className="px-4 py-3">
                         <button
