@@ -109,7 +109,7 @@ function ClassInstructions() {
   if (notFound || !classData) {
     return (
       <ClassLayout>
-        <p className="text-center text-slate-600 py-10">Class not found.</p>
+        <p className="text-center text-slate-600 py-10">Instructions are not available for the selected class.</p>
       </ClassLayout>
     )
   }

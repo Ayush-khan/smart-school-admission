@@ -17,11 +17,11 @@ const SCHOOL_REGEX = /^[\p{L}\p{N}][\p{L}\p{M}\p{N}\s.,'\u2019&()/-]*$/u
 
 const LIMITS = { name: 100, parent: 100, email: 100, school: 100, address: 250, message: 500 }
 
-// "1 (Shift 2) - 2026-2027": class + shift + academic year, all from the backend.
+// "1 (Shift 2) (2026-2027)": class + shift + academic year in brackets, all from the backend.
 const classOptionLabel = (c) => {
   const label = formatClassLabel(c)
   const year = c?.academic_yr ?? c?.academic_year
-  return year ? `${label} - ${year}` : label
+  return year ? `${label} (${year})` : label
 }
 
 const clean = (s) => s.trim().replace(/\s+/g, ' ')
