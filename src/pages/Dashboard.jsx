@@ -2,8 +2,10 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import EnquiryModal from '../components/EnquiryModal'
+import EnquiryDetailsModal from '../components/EnquiryDetailsModal'
 import logo from '../assets/evolvu-logo.webp'
 import { getClasses, getClassesForUser, getEnquiryClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
+import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
 import { formatClassLabel } from '../utils/classLabel'
@@ -11,6 +13,7 @@ import { formatClassLabel } from '../utils/classLabel'
 function Dashboard() {
   const navigate = useNavigate()
   const [showEnquiry, setShowEnquiry] = useState(false)
+  const [viewEnquiry, setViewEnquiry] = useState(null) // enquiry shown in the details popup
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
   const [activeTab, setActiveTab] = useState('applications')
@@ -203,20 +206,47 @@ function Dashboard() {
     }
   }
 
-  const getClassLabel = (classId) => {
-    const match = classes.find((c) => String(c.id ?? c.class_id) === String(classId))
-    return match ? formatClassLabel(match) : classId
+  // Find a class by id. Looks in every class list we load (all classes, the classes this
+  // user can apply to, and the enquiry classes), so a name is found even if one list is
+  // empty or does not contain that class.
+  const findClassById = (classId) => {
+    if (classId === undefined || classId === null || classId === '') return undefined
+    const sameId = (c) => String(c.id ?? c.class_id) === String(classId)
+    return classes.find(sameId) ?? userClasses.find(sameId) ?? enquiryClasses.find(sameId)
+  }
+
+  // Application table "Class" column: class name (+ shift). If the form row already has the
+  // class name from the API, that is used when no class list matches; the raw id is the last resort.
+  const getClassLabel = (classId, form) => {
+    const match = findClassById(classId)
+    if (match) return formatClassLabel(match)
+    return form?.class_name ?? form?.class ?? classId
   }
 
   // The enquiries API returns the class NAME in "class" (e.g. "1", "Nursery"),
   // not an id. If a class_id is ever sent, match it; otherwise show the name as is.
   const getEnquiryClassLabel = (enquiry) => {
-    if (enquiry.class_id) {
-      const sameId = (c) => String(c.id ?? c.class_id) === String(enquiry.class_id)
-      const match = classes.find(sameId) ?? enquiryClasses.find(sameId)
-      if (match) return formatClassLabel(match)
-    }
+    const match = findClassById(enquiry.class_id)
+    if (match) return formatClassLabel(match)
     return enquiry.class_name ?? enquiry.class ?? '—'
+  }
+
+  // Academic year the enquiry was made for, e.g. "2027-2028".
+  // Preferably sent by the enquiries API (academic_yr / academic_year); if only class_id
+  // comes, fall back to the year of the matching class.
+  const getEnquiryAcademicYear = (enquiry) => {
+    const direct = enquiry.academic_yr ?? enquiry.academic_year
+    if (direct) return direct
+    const match = findClassById(enquiry.class_id)
+    return match?.academic_yr ?? match?.academic_year ?? '—'
+  }
+
+  // Table "Class" column: class + academic year in brackets, e.g. "Nursery (2027-2028)".
+  // Shows only the class until the API sends the academic year.
+  const getEnquiryClassWithYear = (enquiry) => {
+    const label = getEnquiryClassLabel(enquiry)
+    const year = getEnquiryAcademicYear(enquiry)
+    return year && year !== '—' ? `${label} (${year})` : label
   }
 
   const getFullName = (form) => {
@@ -417,7 +447,7 @@ function Dashboard() {
                     >
                       <td className="px-4 py-3">{form.form_id}</td>
                       <td className="px-4 py-3">{getFullName(form)}</td>
-                      <td className="px-4 py-3">{getClassLabel(form.class_id)}</td>
+                      <td className="px-4 py-3">{getClassLabel(form.class_id, form)}</td>
                       <td className="px-4 py-3">{form.admission_form_status}</td>
                       <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
                       <td className="px-4 py-3">{getPaymentLabel(form)}</td>
@@ -465,18 +495,19 @@ function Dashboard() {
                   <th className="px-4 py-3 font-semibold">Student Name</th>
                   <th className="px-4 py-3 font-semibold">Class</th>
                   <th className="px-4 py-3 font-semibold">Enquiry Status</th>
+                  <th className="px-4 py-3 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingEnquiries ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
                       Loading enquiries...
                     </td>
                   </tr>
                 ) : enquiries.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
                      No enquiries have been submitted yet.
                     </td>
                   </tr>
@@ -489,8 +520,17 @@ function Dashboard() {
                     >
                       <td className="px-4 py-3">{enquiry.enquiry_number ?? enquiry.enquiry_id ?? enquiry.id}</td>
                       <td className="px-4 py-3">{getEnquiryStudentName(enquiry)}</td>
-                      <td className="px-4 py-3">{getEnquiryClassLabel(enquiry)}</td>
+                      <td className="px-4 py-3">{getEnquiryClassWithYear(enquiry)}</td>
                       <td className="px-4 py-3">{enquiry.status ?? enquiry.enquiry_status ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setViewEnquiry(enquiry)}
+                          className="text-blue-700 font-medium hover:underline"
+                        >
+                          View
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -499,6 +539,15 @@ function Dashboard() {
           </div>
         )}
       </main>
+
+      {viewEnquiry && (
+        <EnquiryDetailsModal
+          enquiry={viewEnquiry}
+          classLabel={getEnquiryClassLabel(viewEnquiry)}
+          academicYear={getEnquiryAcademicYear(viewEnquiry)}
+          onClose={() => setViewEnquiry(null)}
+        />
+      )}
 
       {showEnquiry && (
         <EnquiryModal
