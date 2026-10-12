@@ -41,7 +41,22 @@ function ClassStudentDetails() {
   const onSubmit = async (data) => {
     setSaving(true)
     try {
-      const payload = { ...data, class_id: classId, academic_yr: '2026-27', nar_id: getSessionInfo().narId }
+      const payload = {
+        first_name: data.firstName,
+        mid_name: data.middleName,
+        last_name: data.lastName,
+        dob: data.dob,
+        birth_place: data.birthPlace,
+        mother_tongue: data.motherTongue,
+        gender: data.gender,
+        religion: data.religion,
+        caste: data.caste,
+        subcaste: data.subCaste,
+        category: data.category,
+        class_id: classId,
+        academic_yr: '2026-27',
+        nar_id: getSessionInfo().narId,
+      }
       const existingFormId = getFormId(classId)
       if (existingFormId) payload.form_id = existingFormId
 

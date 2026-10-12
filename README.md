@@ -1,5 +1,17 @@
 # React + Vite
 
+## Saving completed admission applications
+
+At final submission, the frontend can send the saved application sections to
+`POST /api/admission/student-details` with the existing `form_id`. The request
+uses the backend's confirmed flat fields for student and address data, plus
+snake_case `parents`, `siblings`, `academic`, and `additional` section data.
+
+Set `VITE_ADMISSION_FORM_UPSERT_ENABLED=true` only after the backend supports
+updating an existing form by `form_id`. Leave it unset until then; the current
+backend implementation creates a new form for every POST and could create a
+duplicate.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

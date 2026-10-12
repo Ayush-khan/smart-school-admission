@@ -5,7 +5,8 @@ const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'X-School-Domain': window.location.hostname,   // <-- ye nayi line
+    // On localhost the real site domain can be faked for testing: set VITE_SCHOOL_DOMAIN=admtest.evolvu.in in .env.local
+    'X-School-Domain': import.meta.env.VITE_SCHOOL_DOMAIN || window.location.hostname,
     ...(getSchoolCode() && { 'X-School-Code': getSchoolCode() }),
   },
 })

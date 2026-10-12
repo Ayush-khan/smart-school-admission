@@ -3,10 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-import { saveAdmissionSignature } from '../services/applicationService'
+import { saveAdmissionSignature, saveStudentDetails } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getFormId } from '../utils/formId'
 import { nameRules } from '../utils/validators'
+import { getApplicationData } from '../utils/applicationData'
+import { getSessionInfo } from '../utils/session'
+import { buildApplicationSubmissionPayload } from '../utils/applicationSubmission'
 
 const SIGNATURE_NAME_MAX = 100
 const NAME_PATTERN = nameRules('full name').pattern.value
@@ -94,6 +97,18 @@ function ClassDeclaration() {
       if (!formId) {
         toast.error('Could not find your application. Please go back and try again.')
         return
+      }
+      if (import.meta.env.VITE_ADMISSION_FORM_UPSERT_ENABLED === 'true') {
+        const payload = buildApplicationSubmissionPayload({
+          application: getApplicationData(classId),
+          classId,
+          formId,
+          narId: getSessionInfo().narId,
+        })
+        const result = await saveStudentDetails(payload)
+        if (result?.success === false) {
+          throw new Error(result.message || 'Could not save the completed application.')
+        }
       }
       await saveAdmissionSignature({
         formId,
