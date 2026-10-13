@@ -5,6 +5,7 @@ import { useState } from 'react'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
+import { nameRules } from '../utils/validators'
 import { saveAdmissionSection as saveSiblingToApi } from '../utils/saveAdmissionSection'
 import { getErrorMessage } from '../services/apiHelpers'
 
@@ -20,6 +21,11 @@ function ClassSiblingDetails() {
     defaultValues: {
       siblings: [
         {
+          name: savedData.siblings?.list?.[0]?.name || '',
+          className: savedData.siblings?.list?.[0]?.className || '',
+          section: savedData.siblings?.list?.[0]?.section || '',
+          admissionNumber: savedData.siblings?.list?.[0]?.admissionNumber || '',
+          relationship: savedData.siblings?.list?.[0]?.relationship || '',
           siblingClassId: savedData.siblings?.list?.[0]?.siblingClassId
             ?? savedData.siblings?.list?.[0]?.classId
             ?? '',
@@ -53,6 +59,11 @@ function ClassSiblingDetails() {
         sibling: hasSibling ? 'Yes' : 'No',
         sibling_class_id: hasSibling ? sibling.siblingClassId : '',
         sibling_student_id: hasSibling ? sibling.siblingStudentId : '',
+        sibling_name: hasSibling ? sibling.name : '',
+        sibling_class: hasSibling ? sibling.className : '',
+        sibling_section: hasSibling ? sibling.section : '',
+        sibling_admission_number: hasSibling ? sibling.admissionNumber : '',
+        sibling_relationship: hasSibling ? sibling.relationship : '',
       })
       saveApplicationSection(classId, 'siblings', savedSiblings)
       toast.success('Sibling details saved')
@@ -93,7 +104,61 @@ function ClassSiblingDetails() {
                     <div className="flex justify-between items-center mb-3">
                       <p className="text-sm font-semibold text-slate-700">Sibling {index + 1}</p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className={labelClass}>{reqStar} Sibling Name</label>
+                        <input
+                          className={inputCls(errors.siblings?.[index]?.name)}
+                          maxLength={100}
+                          {...register(`siblings.${index}.name`, nameRules("sibling's name", true))}
+                        />
+                        {errors.siblings?.[index]?.name && <p className={errClass}>{errors.siblings[index].name.message}</p>}
+                      </div>
+                      <div>
+                        <label className={labelClass}>{reqStar} Class</label>
+                        <input
+                          className={inputCls(errors.siblings?.[index]?.className)}
+                          maxLength={20}
+                          {...register(`siblings.${index}.className`, {
+                            required: 'Required',
+                            pattern: { value: /^[A-Za-z0-9][A-Za-z0-9 -]*$/, message: 'Enter a valid class.' },
+                          })}
+                        />
+                        {errors.siblings?.[index]?.className && <p className={errClass}>{errors.siblings[index].className.message}</p>}
+                      </div>
+                      <div>
+                        <label className={labelClass}>Section</label>
+                        <input
+                          className={inputCls(errors.siblings?.[index]?.section)}
+                          maxLength={3}
+                          {...register(`siblings.${index}.section`, {
+                            pattern: { value: /^[A-Za-z0-9]{1,3}$/, message: 'Enter a valid section (e.g. A).' },
+                          })}
+                        />
+                        {errors.siblings?.[index]?.section && <p className={errClass}>{errors.siblings[index].section.message}</p>}
+                      </div>
+                      <div>
+                        <label className={labelClass}>Admission Number</label>
+                        <input
+                          className={inputCls(errors.siblings?.[index]?.admissionNumber)}
+                          inputMode="numeric"
+                          maxLength={20}
+                          {...register(`siblings.${index}.admissionNumber`, {
+                            pattern: { value: /^\d+$/, message: 'Only numbers are allowed.' },
+                            onChange: (event) => { event.target.value = event.target.value.replace(/\D/g, '') },
+                          })}
+                        />
+                        {errors.siblings?.[index]?.admissionNumber && <p className={errClass}>{errors.siblings[index].admissionNumber.message}</p>}
+                      </div>
+                      <div>
+                        <label className={labelClass}>{reqStar} Relationship</label>
+                        <input
+                          className={inputCls(errors.siblings?.[index]?.relationship)}
+                          maxLength={30}
+                          {...register(`siblings.${index}.relationship`, nameRules('relationship', true))}
+                        />
+                        {errors.siblings?.[index]?.relationship && <p className={errClass}>{errors.siblings[index].relationship.message}</p>}
+                      </div>
                       <div>
                         <label className={labelClass}>{reqStar} Sibling Class ID</label>
                         <input

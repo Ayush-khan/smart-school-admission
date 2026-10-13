@@ -36,6 +36,11 @@ function Field({ label, value }) {
   )
 }
 
+function OptionalField({ label, value }) {
+  if (value === undefined || value === null || String(value).trim() === '') return null
+  return <Field label={label} value={Array.isArray(value) ? value.join(', ') : value} />
+}
+
 function ClassReview() {
   const navigate = useNavigate()
   const { classId } = useParams()
@@ -70,6 +75,12 @@ function ClassReview() {
                 <Field label="Category" value={student.category} />
                 <Field label="Mother Tongue" value={student.motherTongue} />
                 <Field label="Birth Place" value={student.birthPlace} />
+                <OptionalField label="Middle Name" value={student.middleName} />
+                <OptionalField label="Caste" value={student.caste} />
+                <OptionalField label="Sub-caste" value={student.subCaste} />
+                <OptionalField label="Student Aadhaar Number" value={student.studAadhar} />
+                <OptionalField label="Current School Class" value={student.currentSchoolClass} />
+                <OptionalField label="Achievements" value={student.acheivements} />
               </div>
             </ReviewSection>
 
@@ -90,6 +101,25 @@ function ClassReview() {
                 <Field label="Father Mobile" value={parents.fatherMobile} />
                 <Field label="Mother's Name" value={parents.motherName} />
                 <Field label="Mother Mobile" value={parents.motherMobile} />
+                <OptionalField label="Father Occupation" value={parents.fatherOccupation} />
+                <OptionalField label="Father Email" value={parents.fatherEmail} />
+                <Field label="Father Aadhaar" value={parents.fatherAadhaar} />
+                <Field label="Father Qualification" value={parents.fatherQualification} />
+                <OptionalField label="Father Designation" value={parents.fatherDesignation} />
+                <OptionalField label="Father Nature of Business" value={parents.fatherNatureOfBusiness} />
+                <OptionalField label="Father Office Address" value={parents.fatherOfficeAddress} />
+                <OptionalField label="Mother Occupation" value={parents.motherOccupation} />
+                <OptionalField label="Mother Email" value={parents.motherEmail} />
+                <Field label="Mother Aadhaar" value={parents.motherAadhaar} />
+                <Field label="Mother Qualification" value={parents.motherQualification} />
+                <OptionalField label="Mother Designation" value={parents.motherDesignation} />
+                <OptionalField label="Mother Nature of Business" value={parents.motherNatureOfBusiness} />
+                <OptionalField label="Mother Office Address" value={parents.motherOfficeAddress} />
+                <Field
+                  label="Areas to contribute"
+                  value={Array.isArray(parents.contributionAreas) ? parents.contributionAreas.join(', ') : parents.contributionAreas}
+                />
+                <Field label="Other area" value={parents.otherAreaOfInterest} />
               </div>
             </ReviewSection>
 
@@ -98,6 +128,11 @@ function ClassReview() {
                 <div className="space-y-2">
                   {siblings.list.map((s, i) => (
                     <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
+                      <Field label="Sibling Name" value={s.name} />
+                      <Field label="Class" value={s.className} />
+                      <Field label="Section" value={s.section} />
+                      <Field label="Admission Number" value={s.admissionNumber} />
+                      <Field label="Relationship" value={s.relationship} />
                       <Field label="Class ID" value={s.siblingClassId} />
                       <Field label="Student ID" value={s.siblingStudentId} />
                     </div>
@@ -114,8 +149,11 @@ function ClassReview() {
                   {academic.map((rec, i) => (
                     <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
                       <Field label="Previous School" value={rec.previousSchool ?? rec.schoolName} />
+                      <Field label="Board" value={rec.board} />
                       <Field label="Previous Class" value={rec.previousClass} />
+                      <Field label="Academic Year" value={rec.academicYear} />
                       <Field label="Percentage" value={rec.previousPercentage ?? rec.percentage} />
+                      <Field label="Transfer Certificate Status" value={rec.tcStatus} />
                     </div>
                   ))}
                 </div>
@@ -126,10 +164,15 @@ function ClassReview() {
 
             <ReviewSection title="Additional Information" editPath={`${base}/additional`} navigate={navigate}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Blood Group" value={additional.bloodGroup} />
-                <Field label="Identification Mark" value={additional.identificationMark} />
-                <Field label="Medical Information" value={additional.medicalInformation} />
-                <Field label="SMS Contact Mobile" value={additional.smsSendingPhoneNo} />
+                <OptionalField label="Achievements" value={additional.achievements} />
+                <OptionalField label="Extracurricular Activities" value={additional.extracurricular} />
+                <OptionalField label="Sports" value={additional.sports} />
+                <OptionalField label="Areas of Interest" value={additional.areasOfInterest} />
+                <OptionalField label="Blood Group" value={additional.bloodGroup} />
+                <OptionalField label="Identification Mark" value={additional.identificationMark} />
+                <OptionalField label="Medical Information" value={additional.medicalInformation} />
+                <OptionalField label="SMS Contact Mobile" value={additional.smsSendingPhoneNo} />
+                <OptionalField label="Special Skills" value={additional.specialSkills} />
               </div>
             </ReviewSection>
 

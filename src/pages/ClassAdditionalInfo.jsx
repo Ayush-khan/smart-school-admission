@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
+import CustomSelect from '../components/CustomSelect'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { saveAdmissionSection as saveAdditionalToApi } from '../utils/saveAdmissionSection'
@@ -24,27 +25,34 @@ function ClassAdditionalInfo() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
       ...(savedData.additional || {}),
+      identificationMark: savedData.additional?.identificationMark || '',
+      medicalInformation: savedData.additional?.medicalInformation || '',
       smsSendingPhoneNo: savedData.additional?.smsSendingPhoneNo || selectedSmsPhone || '',
     },
   })
 
   const onSubmit = async (data) => {
     const additional = {
+      achievements: data.achievements,
+      extracurricular: data.extracurricular,
+      sports: data.sports,
+      areasOfInterest: data.areasOfInterest,
       bloodGroup: data.bloodGroup,
       identificationMark: data.identificationMark,
       medicalInformation: data.medicalInformation,
+      specialSkills: data.specialSkills,
       smsSendingPhoneNo: data.smsSendingPhoneNo,
     }
     setSaving(true)
     try {
       await saveAdditionalToApi(classId, {
+        acheivements: data.achievements || '',
         blood_group: data.bloodGroup,
-        identification_mark: data.identificationMark,
-        medical_information: data.medicalInformation,
         sms_sending_phone_no: data.smsSendingPhoneNo,
       })
       saveApplicationSection(classId, 'additional', additional)
@@ -74,33 +82,82 @@ function ClassAdditionalInfo() {
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Achievements</label>
+              <textarea
+                rows={2}
+                placeholder="Any notable achievements (academic, sports, cultural, etc.)"
+                className={inputClass}
+                {...register('achievements')}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Extracurricular Activities</label>
+              <textarea
+                rows={2}
+                placeholder="Dance, music, art, clubs, etc."
+                className={inputClass}
+                {...register('extracurricular')}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={labelClass}>Blood Group</label>
-                <select className={inputClass} {...register('bloodGroup')}>
-                  <option value="">SELECT</option>
-                  {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((group) => (
-                    <option key={group} value={group}>{group}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Identification Mark</label>
+                <label className={labelClass}>Sports</label>
                 <input
                   className={inputClass}
-                  maxLength={100}
-                  {...register('identificationMark')}
+                  placeholder="e.g. Football, Swimming"
+                  {...register('sports')}
                 />
               </div>
               <div>
-                <label className={labelClass}>Medical Information</label>
+                <label className={labelClass}>Areas of Interest</label>
+                <input
+                  className={inputClass}
+                  placeholder="e.g. Science, Reading, Robotics"
+                  {...register('areasOfInterest')}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Blood Group</label>
+                <CustomSelect
+                  control={control}
+                  name="bloodGroup"
+                  options={['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']}
+                />
+                {errors.bloodGroup && <p className={errClass}>{errors.bloodGroup.message}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Special Skills</label>
+              <input
+                className={inputClass}
+                placeholder="Any special skills or talents"
+                {...register('specialSkills')}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* TODO: Send these only after the backend confirms their request keys. */}
+              <div>
+                <label className={labelClass}>Identification Mark</label>
+                <input className={inputClass} maxLength={100} {...register('identificationMark')} />
+              </div>
+              <div>
+                <label className={labelClass}>Medical / Accessibility Information (optional)</label>
                 <textarea
                   rows={2}
+                  placeholder="Any information the school should be aware of (allergies, accommodations, etc.)"
                   className={inputClass}
                   maxLength={500}
                   {...register('medicalInformation')}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>SMS Contact Mobile Number</label>
                 <input

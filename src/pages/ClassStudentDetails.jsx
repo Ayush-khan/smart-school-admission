@@ -53,6 +53,9 @@ function ClassStudentDetails() {
         caste: data.caste,
         subcaste: data.subCaste,
         category: data.category,
+        stud_aadhar: data.studAadhar,
+        current_school_class: data.currentSchoolClass,
+        acheivements: data.acheivements,
         class_id: classId,
         nar_id: getSessionInfo().narId,
       }
@@ -78,6 +81,8 @@ function ClassStudentDetails() {
 
   const inputClass =
     'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const fieldClass = (error) =>
+    `${inputClass} ${error ? 'border-red-500' : 'border-slate-300'}`
   const disabledInputClass =
     'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-slate-100 text-slate-500'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1'
@@ -179,6 +184,34 @@ function ClassStudentDetails() {
                   options={['General', 'OBC', 'SC', 'ST', 'Other']}
                 />
                 {errors.category && <p className={errClass}>{errors.category.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Student Aadhaar Number</label>
+                <input
+                  className={fieldClass(errors.studAadhar)}
+                  inputMode="numeric"
+                  maxLength={12}
+                  {...register('studAadhar', {
+                    onChange: (event) => {
+                      event.target.value = event.target.value.replace(/\D/g, '').slice(0, 12)
+                    },
+                    validate: (value) => !value || /^\d{12}$/.test(value) || 'Enter a valid student Aadhaar number.',
+                  })}
+                />
+                {errors.studAadhar && <p className={errClass}>{errors.studAadhar.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Current School Class</label>
+                <input className={inputClass} maxLength={50} {...register('currentSchoolClass')} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Achievements</label>
+                <textarea
+                  rows={3}
+                  className={inputClass}
+                  maxLength={500}
+                  {...register('acheivements')}
+                />
               </div>
             </div>
 
