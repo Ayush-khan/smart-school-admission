@@ -1,73 +1,42 @@
-import { useState, useEffect, useRef } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-import { nameRules, occupationRules, mobileRules } from '../utils/validators'
-
-const CONTRIBUTION_OPTIONS = ['Cultural', 'Medical', 'Media', 'Academic']
-
-function MultiSelect({ value = [], onChange, options, placeholder, className }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const close = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [])
-
-  const toggle = (opt) => {
-    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt])
-  }
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`${className} flex items-center justify-between bg-white text-left min-h-[38px]`}
-      >
-        <span className={value.length ? 'text-slate-800' : 'text-slate-400'}>
-          {value.length ? value.map((v) => v.toUpperCase()).join(', ') : placeholder}
-        </span>
-        <span className="text-slate-400 text-xs ml-2">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-slate-300 rounded-lg shadow-lg py-1">
-          {options.map((opt) => (
-            <label key={opt} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer">
-              <input type="checkbox" checked={value.includes(opt)} onChange={() => toggle(opt)} />
-              {opt.toUpperCase()}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+import { nameRules, mobileRules } from '../utils/validators'
+import { saveAdmissionSection as saveParentsToApi } from '../utils/saveAdmissionSection'
+import { getErrorMessage } from '../services/apiHelpers'
+import { useState } from 'react'
 
 function ClassParentDetails() {
   const navigate = useNavigate()
   const { classId } = useParams()
-
-    const savedData = getApplicationData(classId)
-
+  const [saving, setSaving] = useState(false)
+  const savedData = getApplicationData(classId)
   const {
     register,
-    control,
     handleSubmit,
     formState: { errors },
-  } = useForm({ defaultValues: { contributionAreas: [], ...(savedData.parents || {}) }, mode: 'onChange' })
+  } = useForm({ defaultValues: savedData.parents || {}, mode: 'onChange' })
 
-    const onSubmit = (data) => {
-    saveApplicationSection(classId, 'parents', data)
-    toast.success('Parent details saved')
-    navigate(`/class/${classId}/application/siblings`)
+  const onSubmit = async (data) => {
+    setSaving(true)
+    try {
+      await saveParentsToApi(classId, {
+        father_name: data.fatherName,
+        father_mobile: data.fatherMobile,
+        mother_name: data.motherName,
+        mother_mobile: data.motherMobile,
+      })
+      saveApplicationSection(classId, 'parents', data)
+      toast.success('Parent details saved')
+      navigate(`/class/${classId}/application/siblings`)
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not save parent details.'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const inputClass =
@@ -85,164 +54,49 @@ function ClassParentDetails() {
           </h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>{reqStar} Father's Name</label>
                 <input className={inputClass} {...register('fatherName', nameRules("father's name", true))} />
                 {errors.fatherName && <p className={errClass}>{errors.fatherName.message}</p>}
               </div>
               <div>
-                <label className={labelClass}>{reqStar} Email Id</label>
-                <input
-                  className={inputClass}
-                  {...register('fatherEmail', {
-                    required: 'Required',
-                    pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
-                  })}
-                />
-                {errors.fatherEmail && <p className={errClass}>{errors.fatherEmail.message}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>{reqStar} Mobile Number</label>
+                <label className={labelClass}>{reqStar} Father's Mobile Number</label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">+91</span>
-                  <input
-                    className={inputClass}
-                    {...register('fatherMobile', mobileRules(true))}
-                  />
+                  <input className={inputClass} {...register('fatherMobile', mobileRules(true))} />
                 </div>
                 {errors.fatherMobile && <p className={errClass}>{errors.fatherMobile.message}</p>}
-                                <label className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
-                  <input type="radio" value="father" {...register('smsContact', { required: 'Please select where to receive SMS' })} />
-                  Set to receive SMS at this no
-                </label>
               </div>
-              <div>
-                <label className={labelClass}>{reqStar} Father Occupation</label>
-                <input className={inputClass} {...register('fatherOccupation', occupationRules('father occupation', true))} />
-                {errors.fatherOccupation && <p className={errClass}>{errors.fatherOccupation.message}</p>}
-              </div>
-
               <div>
                 <label className={labelClass}>{reqStar} Mother's Name</label>
                 <input className={inputClass} {...register('motherName', nameRules("mother's name", true))} />
                 {errors.motherName && <p className={errClass}>{errors.motherName.message}</p>}
               </div>
               <div>
-                <label className={labelClass}>{reqStar} Email Id</label>
-                <input
-                  className={inputClass}
-                  {...register('motherEmail', {
-                    required: 'Required',
-                    pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
-                  })}
-                />
-                {errors.motherEmail && <p className={errClass}>{errors.motherEmail.message}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>{reqStar} Mobile Number</label>
+                <label className={labelClass}>{reqStar} Mother's Mobile Number</label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">+91</span>
-                  <input
-                    className={inputClass}
-                    {...register('motherMobile', mobileRules(true))}
-                  />
+                  <input className={inputClass} {...register('motherMobile', mobileRules(true))} />
                 </div>
                 {errors.motherMobile && <p className={errClass}>{errors.motherMobile.message}</p>}
-                                <label className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
-                  <input type="radio" value="mother" {...register('smsContact', { required: 'Please select where to receive SMS' })} />
-                  Set to receive SMS at this no
-                </label>
-                {errors.smsContact && <p className="text-xs text-red-600 mt-1">{errors.smsContact.message}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>{reqStar} Mother Occupation</label>
-                <input className={inputClass} {...register('motherOccupation', occupationRules('mother occupation', true))} />
-                {errors.motherOccupation && <p className={errClass}>{errors.motherOccupation.message}</p>}
-              </div>
-
-                            <div>
-                <label className={labelClass}>Mother Aadhaar Card No.</label>
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  maxLength={12}
-                  {...register('motherAadhaar', {
-                    pattern: { value: /^\d{12}$/, message: 'Enter a valid Aadhar No.' },
-                    onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
-                  })}
-                />
-                {errors.motherAadhaar && <p className={errClass}>{errors.motherAadhaar.message}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>Father Aadhaar Card No.</label>
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  maxLength={12}
-                  {...register('fatherAadhaar', {
-                    pattern: { value: /^\d{12}$/, message: 'Enter a valid Aadhar No.' },
-                    onChange: (e) => { e.target.value = e.target.value.replace(/\D/g, '') },
-                  })}
-                />
-                {errors.fatherAadhaar && <p className={errClass}>{errors.fatherAadhaar.message}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>Mother Qualification</label>
-                <input
-                  className={inputClass}
-                  maxLength={50}
-                  {...register('motherQualification', {
-                    pattern: {
-                    value: /^[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
-                    message: 'Only letters, numbers, spaces and . & - are allowed',
-                    },
-                    validate: (v) => !/^\d+$/.test(v || '') || /^\d{1,2}$/.test(v) || 'Number can be maximum 2 digits',
-                  })}
-                />
-                {errors.motherQualification && <p className={errClass}>{errors.motherQualification.message}</p>}
-              </div>
-              <div>
-                <label className={labelClass}>Father Qualification</label>
-                <input
-                  className={inputClass}
-                  maxLength={50}
-                  {...register('fatherQualification', {
-                    pattern: {
-                    value: /^[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
-                      message: 'Only letters, numbers, spaces and . & - are allowed',
-                    },
-                    validate: (v) => !/^\d+$/.test(v || '') || /^\d{1,2}$/.test(v) || 'Number can be maximum 2 digits',
-                  })}
-                />
-                {errors.fatherQualification && <p className={errClass}>{errors.fatherQualification.message}</p>}
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Areas in which parent can contribute</label>
-                <Controller
-                  name="contributionAreas"
-                  control={control}
-                  render={({ field }) => (
-                    <MultiSelect
-                      value={Array.isArray(field.value) ? field.value : []}
-                      onChange={field.onChange}
-                      options={CONTRIBUTION_OPTIONS}
-                      placeholder="Select one or more"
-                      className={inputClass}
-                    />
-                  )}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Other area of interest</label>
-                <input
-                  className={inputClass}
-                  placeholder="Other area of interest"
-                  {...register('otherAreaOfInterest')}
-                />
               </div>
             </div>
+
+            <fieldset>
+              <legend className="text-sm font-medium text-slate-700 mb-2">Number to receive SMS</legend>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" value="father" {...register('smsContact', { required: 'Please select a number' })} />
+                  Father's mobile
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="radio" value="mother" {...register('smsContact', { required: 'Please select a number' })} />
+                  Mother's mobile
+                </label>
+              </div>
+              {errors.smsContact && <p className={errClass}>{errors.smsContact.message}</p>}
+            </fieldset>
 
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
               <button
@@ -254,9 +108,10 @@ function ClassParentDetails() {
               </button>
               <button
                 type="submit"
-                className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
+                disabled={saving}
+                className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light disabled:opacity-60"
               >
-                Save & Continue
+                {saving ? 'Saving...' : 'Save & Continue'}
               </button>
             </div>
           </form>

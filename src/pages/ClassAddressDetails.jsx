@@ -6,11 +6,14 @@ import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { nameRules, addressRules, pincodeRules } from '../utils/validators'
+import { saveAdmissionSection as saveAddressToApi } from '../utils/saveAdmissionSection'
+import { getErrorMessage } from '../services/apiHelpers'
 
 function ClassAddressDetails() {
   const navigate = useNavigate()
   const { classId } = useParams()
   const [sameAsPresent, setSameAsPresent] = useState(false)
+  const [saving, setSaving] = useState(false)
 
     const savedData = getApplicationData(classId)
 
@@ -31,10 +34,25 @@ function ClassAddressDetails() {
     }
   }
 
-      const onSubmit = (data) => {
-    saveApplicationSection(classId, 'address', data)
-    toast.success('Address details saved')
-    navigate(`/class/${classId}/application/parents`)
+  const onSubmit = async (data) => {
+    setSaving(true)
+    try {
+      await saveAddressToApi(classId, {
+        locality: data.presentAddress,
+        city: data.presentCity,
+        state: data.presentState,
+        pincode: Number(data.presentPincode),
+        perm_address: data.permanentAddress,
+        nationality: data.nationality,
+      })
+      saveApplicationSection(classId, 'address', data)
+      toast.success('Address details saved')
+      navigate(`/class/${classId}/application/parents`)
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not save address details.'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const inputClass =
@@ -124,9 +142,10 @@ function ClassAddressDetails() {
               </button>
               <button
                 type="submit"
-                className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
+                disabled={saving}
+                className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light disabled:opacity-60"
               >
-                Save & Continue
+                {saving ? 'Saving...' : 'Save & Continue'}
               </button>
             </div>
           </form>

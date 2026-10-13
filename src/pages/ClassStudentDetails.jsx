@@ -54,7 +54,6 @@ function ClassStudentDetails() {
         subcaste: data.subCaste,
         category: data.category,
         class_id: classId,
-        academic_yr: '2026-27',
         nar_id: getSessionInfo().narId,
       }
       const existingFormId = getFormId(classId)

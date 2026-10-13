@@ -87,13 +87,9 @@ function ClassReview() {
             <ReviewSection title="Parent Information" editPath={`${base}/parents`} navigate={navigate}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Father's Name" value={parents.fatherName} />
-                <Field label="Father Email" value={parents.fatherEmail} />
                 <Field label="Father Mobile" value={parents.fatherMobile} />
-                <Field label="Father Occupation" value={parents.fatherOccupation} />
                 <Field label="Mother's Name" value={parents.motherName} />
-                <Field label="Mother Email" value={parents.motherEmail} />
                 <Field label="Mother Mobile" value={parents.motherMobile} />
-                <Field label="Mother Occupation" value={parents.motherOccupation} />
               </div>
             </ReviewSection>
 
@@ -102,10 +98,8 @@ function ClassReview() {
                 <div className="space-y-2">
                   {siblings.list.map((s, i) => (
                     <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
-                      <Field label="Name" value={s.name} />
-                      <Field label="Class" value={s.className} />
-                      <Field label="Section" value={s.section} />
-                      <Field label="Relationship" value={s.relationship} />
+                      <Field label="Class ID" value={s.siblingClassId} />
+                      <Field label="Student ID" value={s.siblingStudentId} />
                     </div>
                   ))}
                 </div>
@@ -119,10 +113,9 @@ function ClassReview() {
                 <div className="space-y-2">
                   {academic.map((rec, i) => (
                     <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
-                      <Field label="Previous School" value={rec.schoolName} />
-                      <Field label="Board" value={rec.board} />
+                      <Field label="Previous School" value={rec.previousSchool ?? rec.schoolName} />
                       <Field label="Previous Class" value={rec.previousClass} />
-                      <Field label="Percentage" value={rec.percentage} />
+                      <Field label="Percentage" value={rec.previousPercentage ?? rec.percentage} />
                     </div>
                   ))}
                 </div>
@@ -133,10 +126,10 @@ function ClassReview() {
 
             <ReviewSection title="Additional Information" editPath={`${base}/additional`} navigate={navigate}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Achievements" value={additional.achievements} />
-                <Field label="Extracurricular Activities" value={additional.extracurricular} />
-                <Field label="Sports" value={additional.sports} />
-                <Field label="Areas of Interest" value={additional.areasOfInterest} />
+                <Field label="Blood Group" value={additional.bloodGroup} />
+                <Field label="Identification Mark" value={additional.identificationMark} />
+                <Field label="Medical Information" value={additional.medicalInformation} />
+                <Field label="SMS Contact Mobile" value={additional.smsSendingPhoneNo} />
               </div>
             </ReviewSection>
 
