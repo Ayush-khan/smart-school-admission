@@ -128,13 +128,8 @@ function ClassReview() {
                 <div className="space-y-2">
                   {siblings.list.map((s, i) => (
                     <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
-                      <Field label="Sibling Name" value={s.name} />
+                      <Field label="Student Name" value={s.studentName ?? s.name ?? s.siblingStudentId} />
                       <Field label="Class" value={s.className} />
-                      <Field label="Section" value={s.section} />
-                      <Field label="Admission Number" value={s.admissionNumber} />
-                      <Field label="Relationship" value={s.relationship} />
-                      <Field label="Class ID" value={s.siblingClassId} />
-                      <Field label="Student ID" value={s.siblingStudentId} />
                     </div>
                   ))}
                 </div>

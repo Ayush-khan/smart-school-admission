@@ -87,18 +87,13 @@ function ClassParentDetails() {
     try {
       await saveParentsToApi(classId, {
         father_name: data.fatherName || '',
-        f_email: data.fatherEmail || '',
-        f_mobile: data.fatherMobile || '',
+        father_mobile: data.fatherMobile || '',
+        father_email: data.fatherEmail || '',
         father_occupation: data.fatherOccupation || '',
-        f_aadhar_no: data.fatherAadhaar || '',
-        f_qualification: data.fatherQualification || '',
         mother_name: data.motherName || '',
-        m_emailid: data.motherEmail || '',
-        m_mobile: data.motherMobile || '',
+        mother_mobile: data.motherMobile || '',
+        mother_email: data.motherEmail || '',
         mother_occupation: data.motherOccupation || '',
-        m_aadhar_no: data.motherAadhaar || '',
-        m_qualification: data.motherQualification || '',
-        area_in_which_parent_can_contribute: contributionAreas.join(','),
         other_area: data.otherAreaOfInterest || '',
       })
       saveApplicationSection(classId, 'parents', parentData)

@@ -21,6 +21,14 @@ export async function getClassesForUser(narId) {
 }
 
 // ---------------------------------------------------------------------------
+// Get Classes and Sections for the active academic year
+// ---------------------------------------------------------------------------
+export async function getClassesSectionsOfActiveAcademicYear() {
+  const response = await apiClient.get('/api/getclassessectionsofactiveacademicyr')
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
 // Get Form Fee — GET /api/admission/form-fee
 // ---------------------------------------------------------------------------
 export async function getFormFee(params = {}) {
