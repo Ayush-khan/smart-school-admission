@@ -50,7 +50,6 @@ function ClassReview() {
   const address = data.address || {}
   const parents = data.parents || {}
   const siblings = data.siblings || {}
-  const academic = data.academic || []
   const additional = data.additional || {}
   const documents = data.documents || {}
 
@@ -58,7 +57,7 @@ function ClassReview() {
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={8}>
+      <ApplicationStepperLayout currentStep={7}>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
             📝 Review Your Application
@@ -78,8 +77,6 @@ function ClassReview() {
                 <OptionalField label="Middle Name" value={student.middleName} />
                 <OptionalField label="Caste" value={student.caste} />
                 <OptionalField label="Sub-caste" value={student.subCaste} />
-                <OptionalField label="Student Aadhaar Number" value={student.studAadhar} />
-                <OptionalField label="Current School Class" value={student.currentSchoolClass} />
               </div>
             </ReviewSection>
 
@@ -137,36 +134,12 @@ function ClassReview() {
               )}
             </ReviewSection>
 
-            <ReviewSection title="Academic Details" editPath={`${base}/academic`} navigate={navigate}>
-              {academic.length > 0 ? (
-                <div className="space-y-2">
-                  {academic.map((rec, i) => (
-                    <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
-                      <Field label="Previous School" value={rec.previousSchool ?? rec.schoolName} />
-                      <Field label="Board" value={rec.board} />
-                      <Field label="Previous Class" value={rec.previousClass} />
-                      <Field label="Academic Year" value={rec.academicYear} />
-                      <Field label="Percentage" value={rec.previousPercentage ?? rec.percentage} />
-                      <Field label="Transfer Certificate Status" value={rec.tcStatus} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No academic records added.</p>
-              )}
-            </ReviewSection>
-
             <ReviewSection title="Additional Information" editPath={`${base}/additional`} navigate={navigate}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <OptionalField label="Achievements" value={additional.achievements} />
-                <OptionalField label="Extracurricular Activities" value={additional.extracurricular} />
-                <OptionalField label="Sports" value={additional.sports} />
-                <OptionalField label="Areas of Interest" value={additional.areasOfInterest} />
+                <OptionalField label="Student Aadhaar Card No." value={additional.studAadhar} />
+                <OptionalField label="Current School and Class" value={additional.currentSchoolClass} />
                 <OptionalField label="Blood Group" value={additional.bloodGroup} />
-                <OptionalField label="Identification Mark" value={additional.identificationMark} />
-                <OptionalField label="Medical Information" value={additional.medicalInformation} />
-                <OptionalField label="SMS Contact Mobile" value={additional.smsSendingPhoneNo} />
-                <OptionalField label="Special Skills" value={additional.specialSkills} />
+                <OptionalField label="Achievements" value={additional.achievements} />
               </div>
             </ReviewSection>
 

@@ -116,7 +116,7 @@ function ClassDeclaration() {
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={9}>
+      <ApplicationStepperLayout currentStep={8}>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
             ✍️ Declaration

@@ -189,7 +189,7 @@ function ClassSiblingDetails() {
         list: hasSibling ? [sibling] : [],
       })
       toast.success('Sibling details saved')
-      navigate(`/class/${classId}/application/academic`)
+      navigate(`/class/${classId}/application/additional`)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save sibling details.'))
     } finally {

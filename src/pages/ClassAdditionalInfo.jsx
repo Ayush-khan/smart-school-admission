@@ -29,31 +29,32 @@ function ClassAdditionalInfo() {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      ...(savedData.additional || {}),
-      identificationMark: savedData.additional?.identificationMark || '',
-      medicalInformation: savedData.additional?.medicalInformation || '',
-      smsSendingPhoneNo: savedData.additional?.smsSendingPhoneNo || selectedSmsPhone || '',
+      achievements: savedData.additional?.achievements || '',
+      bloodGroup: savedData.additional?.bloodGroup || '',
+      // Student Aadhaar and Current School Class used to be on the Student Details page,
+      // so fall back to anything the user already typed there.
+      studAadhar: savedData.additional?.studAadhar || savedData.student?.studAadhar || '',
+      currentSchoolClass: savedData.additional?.currentSchoolClass || savedData.student?.currentSchoolClass || '',
     },
   })
 
   const onSubmit = async (data) => {
+    // No textbox for the SMS number any more: it follows the father/mother choice made on the Parents page.
     const additional = {
       achievements: data.achievements,
-      extracurricular: data.extracurricular,
-      sports: data.sports,
-      areasOfInterest: data.areasOfInterest,
       bloodGroup: data.bloodGroup,
-      identificationMark: data.identificationMark,
-      medicalInformation: data.medicalInformation,
-      specialSkills: data.specialSkills,
-      smsSendingPhoneNo: data.smsSendingPhoneNo,
+      studAadhar: data.studAadhar,
+      currentSchoolClass: data.currentSchoolClass,
+      smsSendingPhoneNo: selectedSmsPhone || '',
     }
     setSaving(true)
     try {
       await saveAdditionalToApi(classId, {
         acheivements: data.achievements || '',
-        blood_group: data.bloodGroup,
-        sms_sending_phone_no: data.smsSendingPhoneNo,
+        blood_group: data.bloodGroup || undefined,
+        stud_aadhar: data.studAadhar || '',
+        current_school_class: data.currentSchoolClass || '',
+        sms_sending_phone_no: selectedSmsPhone || '',
       })
       saveApplicationSection(classId, 'additional', additional)
       toast.success('Additional information saved')
@@ -72,7 +73,7 @@ function ClassAdditionalInfo() {
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={6}>
+      <ApplicationStepperLayout currentStep={5}>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-center text-teal-700 font-semibold mb-1 border-b border-slate-200 pb-3">
             ⭐ Additional Information
@@ -82,42 +83,25 @@ function ClassAdditionalInfo() {
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div>
-              <label className={labelClass}>Achievements</label>
-              <textarea
-                rows={2}
-                placeholder="Any notable achievements (academic, sports, cultural, etc.)"
-                className={inputClass}
-                {...register('achievements')}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Extracurricular Activities</label>
-              <textarea
-                rows={2}
-                placeholder="Dance, music, art, clubs, etc."
-                className={inputClass}
-                {...register('extracurricular')}
-              />
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={labelClass}>Sports</label>
+                <label className={labelClass}>Student Aadhaar Card No.</label>
                 <input
                   className={inputClass}
-                  placeholder="e.g. Football, Swimming"
-                  {...register('sports')}
+                  inputMode="numeric"
+                  maxLength={12}
+                  {...register('studAadhar', {
+                    onChange: (event) => {
+                      event.target.value = event.target.value.replace(/\D/g, '').slice(0, 12)
+                    },
+                    validate: (value) => !value || /^\d{12}$/.test(value) || 'Enter a valid student Aadhaar number.',
+                  })}
                 />
+                {errors.studAadhar && <p className={errClass}>{errors.studAadhar.message}</p>}
               </div>
               <div>
-                <label className={labelClass}>Areas of Interest</label>
-                <input
-                  className={inputClass}
-                  placeholder="e.g. Science, Reading, Robotics"
-                  {...register('areasOfInterest')}
-                />
+                <label className={labelClass}>Current School and Class</label>
+                <input className={inputClass} maxLength={50} {...register('currentSchoolClass')} />
               </div>
               <div>
                 <label className={labelClass}>Blood Group</label>
@@ -131,54 +115,20 @@ function ClassAdditionalInfo() {
             </div>
 
             <div>
-              <label className={labelClass}>Special Skills</label>
-              <input
+              <label className={labelClass}>Achievements (If Any)</label>
+              <textarea
+                rows={3}
+                maxLength={500}
+                placeholder="Any notable achievements (academic, sports, cultural, etc.)"
                 className={inputClass}
-                placeholder="Any special skills or talents"
-                {...register('specialSkills')}
+                {...register('achievements')}
               />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* TODO: Send these only after the backend confirms their request keys. */}
-              <div>
-                <label className={labelClass}>Identification Mark</label>
-                <input className={inputClass} maxLength={100} {...register('identificationMark')} />
-              </div>
-              <div>
-                <label className={labelClass}>Medical / Accessibility Information (optional)</label>
-                <textarea
-                  rows={2}
-                  placeholder="Any information the school should be aware of (allergies, accommodations, etc.)"
-                  className={inputClass}
-                  maxLength={500}
-                  {...register('medicalInformation')}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>SMS Contact Mobile Number</label>
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  maxLength={10}
-                  {...register('smsSendingPhoneNo', {
-                    pattern: {
-                      value: /^\d{10}$/,
-                      message: 'Enter a valid 10-digit mobile number.',
-                    },
-                  })}
-                />
-                {errors.smsSendingPhoneNo && <p className={errClass}>{errors.smsSendingPhoneNo.message}</p>}
-              </div>
             </div>
 
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
               <button
                 type="button"
-                onClick={() => navigate(`/class/${classId}/application/academic`)}
+                onClick={() => navigate(`/class/${classId}/application/siblings`)}
                 className="bg-slate-100 text-slate-700 text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-slate-200"
               >
                 Previous

@@ -7,7 +7,6 @@ const steps = [
   'Address',
   'Parent Details',
   'Sibling Details',
-  'Academic Details',
   'Additional Info',
   'Documents',
   'Review',
@@ -23,9 +22,8 @@ function getSavedSteps(data) {
     2: Boolean(data.address && Object.keys(data.address).length > 0),
     3: Boolean(data.parents && Object.keys(data.parents).length > 0),
     4: data.siblings !== undefined && data.siblings !== null,
-    5: Array.isArray(data.academic) && data.academic.length > 0,
-    6: Boolean(data.additional && Object.keys(data.additional).length > 0),
-    7: Boolean(data.documents && Object.keys(data.documents).length > 0),
+    5: Boolean(data.additional && Object.keys(data.additional).length > 0),
+    6: Boolean(data.documents && Object.keys(data.documents).length > 0),
   }
 }
 
@@ -47,7 +45,7 @@ function ApplicationStepperLayout({ currentStep, children }) {
           {steps.map((step, index) => {
             const stepNumber = index + 1
             const isActive = stepNumber === currentStep
-            // Review (8) and Declaration (9) have no data of their own —
+            // Review (7) and Declaration (8) have no data of their own —
             // fall back to position for those, otherwise use real saved state.
             const isDone = stepNumber in savedSteps
               ? savedSteps[stepNumber] && stepNumber !== currentStep

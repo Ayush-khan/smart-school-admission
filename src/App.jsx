@@ -8,7 +8,6 @@ import ClassStudentDetails from './pages/ClassStudentDetails'
 import ClassAddressDetails from './pages/ClassAddressDetails'
 import ClassParentDetails from './pages/ClassParentDetails'
 import ClassSiblingDetails from './pages/ClassSiblingDetails'
-import ClassAcademicDetails from './pages/ClassAcademicDetails'
 import ClassAdditionalInfo from './pages/ClassAdditionalInfo'
 import ClassDocuments from './pages/ClassDocuments'
 import ClassReview from './pages/ClassReview'
@@ -34,7 +33,10 @@ function App() {
       <Route path="/class/:classId/application/address" element={<ClassAddressDetails />} />
       <Route path="/class/:classId/application/parents" element={<ClassParentDetails />} />
       <Route path="/class/:classId/application/siblings" element={<ClassSiblingDetails />} />
-      <Route path="/class/:classId/application/academic" element={<ClassAcademicDetails />} />
+      <Route
+        path="/class/:classId/application/academic"
+        element={<Navigate to="../additional" relative="path" replace />}
+      />
       <Route path="/class/:classId/application/additional" element={<ClassAdditionalInfo />} />
       <Route path="/class/:classId/application/documents" element={<ClassDocuments />} />
       <Route path="/class/:classId/application/review" element={<ClassReview />} />
