@@ -15,6 +15,17 @@ import { getSessionInfo } from '../utils/session'
 const MAX_FILE_SIZE_KB = 220
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024
 
+// Student Photo and Family Photo are printed inside the admission form PDF, and a PDF file
+// cannot be drawn as a picture there. So these two documents accept images only (JPG / PNG).
+// If your document names on the page are different, change this pattern to match them.
+const PHOTO_DOC_PATTERN =
+  /(?:student|family|candidate|child).*(?:photo|photograph|picture|image)|(?:photo|photograph|picture|image).*(?:student|family|candidate|child)/i
+const isPhotoDoc = (doc) =>
+  PHOTO_DOC_PATTERN.test(`${String(doc?.name ?? '')} ${String(doc?.code ?? '')}`)
+const IMAGE_ONLY_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
+const ANY_DOC_TYPES = ['application/pdf', ...IMAGE_ONLY_TYPES]
+const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png']
+
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -47,14 +58,28 @@ function normalizeSavedDocuments(result) {
 
 function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onView }) {
   const inputId = `file-${doc.code}`
+  const imageOnly = isPhotoDoc(doc)
+  const acceptAttr = imageOnly ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'
+  // A photo that was uploaded earlier as a PDF will not print in the form PDF.
+  const savedPhotoIsPdf = imageOnly && Boolean(file) && /\.pdf$/i.test(String(file.name ?? ''))
 
   const handleChange = (e) => {
     const selected = e.target.files[0]
     if (!selected) return
 
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
-    if (!validTypes.includes(selected.type)) {
-      alert('Only PDF, JPG, JPEG, or PNG files are allowed.')
+    const extension = selected.name.split('.').pop()?.toLowerCase()
+    const validPhoto =
+      PHOTO_EXTENSIONS.includes(extension) &&
+      (!selected.type || IMAGE_ONLY_TYPES.includes(selected.type))
+    const validDocument =
+      ['pdf', ...PHOTO_EXTENSIONS].includes(extension) &&
+      (!selected.type || ANY_DOC_TYPES.includes(selected.type))
+    if (imageOnly ? !validPhoto : !validDocument) {
+      alert(
+        imageOnly
+          ? 'Only JPG, JPEG, or PNG images are allowed for photos. PDF files are not allowed.'
+          : 'Only PDF, JPG, JPEG, or PNG files are allowed.'
+      )
       return
     }
 
@@ -80,7 +105,7 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onVi
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-800">{doc.name}</p>
           <p className="text-xs text-slate-500 mt-0.5">
-            PDF, JPG, JPEG, PNG · Max {MAX_FILE_SIZE_KB} KB
+            {imageOnly ? 'JPG, PNG only' : 'PDF, JPG, JPEG, PNG'} · Max {MAX_FILE_SIZE_KB} KB
           </p>
         </div>
 
@@ -112,7 +137,7 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onVi
           <input
             id={inputId}
             type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
+            accept={acceptAttr}
             className="hidden"
             disabled={busy}
             onChange={handleChange}
@@ -165,7 +190,7 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onVi
               <input
                 id={inputId}
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept={acceptAttr}
                 className="hidden"
                 disabled={busy}
                 onChange={handleChange}
@@ -184,6 +209,12 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onVi
             </button>
           </div>
         </div>
+      )}
+
+      {savedPhotoIsPdf && (
+        <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+          This photo is a PDF and will not print in the admission form. Please replace it with a JPG or PNG image.
+        </p>
       )}
     </div>
   )

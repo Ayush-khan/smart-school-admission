@@ -181,7 +181,10 @@ function ClassSiblingDetails() {
     try {
       await saveSiblingToApi(classId, {
         sibling: hasSibling ? 'Yes' : 'No',
-        sibling_class_id: sibling.siblingClassId,
+        sibling_class_id: hasSibling
+          ? `${sibling.siblingClassId}^${sibling.sectionId}`
+          : '',
+        sibling_section_id: sibling.sectionId,
         sibling_student_id: sibling.siblingStudentId,
       })
       saveApplicationSection(classId, 'siblings', {
