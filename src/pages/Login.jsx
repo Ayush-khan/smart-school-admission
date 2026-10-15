@@ -14,12 +14,19 @@ import loginVideo from '../assets/Login_video_Students.mp4'
 // ALSO sends an OTP, the user gets two SMS - then ask the backend developer and set this back to true.
 const REGISTRATION_SENDS_OTP = false
 
+// Backend says "Invalid or missing school code" when the link has no school code.
+// Parents cannot fix that, so we show our own message at the top of the form instead.
+// To change the wording or the matching rule, edit only these two lines.
+const SCHOOL_CODE_ERROR_MESSAGE = "Invalid link. Please open the admission page from your school’s website."
+const isSchoolCodeError = (msg) => /school code/i.test(String(msg || ''))
+
 function Login() {
   const [mode, setMode] = useState('mobile') // 'mobile' or 'email'
   const [fullName, setFullName] = useState('')
   const [contact, setContact] = useState('')
   const [contactError, setContactError] = useState('')
   const [fullNameError, setFullNameError] = useState('')
+  const [formError, setFormError] = useState('') // form-level error shown at the top of the form
   const [loading, setLoading] = useState(false)
   const [nameLocked, setNameLocked] = useState(false)
   const [existingNarId, setExistingNarId] = useState(null)
@@ -78,6 +85,15 @@ function Login() {
       clearTimeout(timer)
     }
   }, [contact, mode])
+
+  // School-code problems go to the top of the form; every other API error stays under the contact field.
+  const showError = (msg) => {
+    if (isSchoolCodeError(msg)) {
+      setFormError(SCHOOL_CODE_ERROR_MESSAGE)
+    } else {
+      setContactError(msg)
+    }
+  }
 
   const validate = () => {
     let valid = true
@@ -149,7 +165,7 @@ function Login() {
     // New user: Start registration
     const result = await createRegistration({ fullName, mode, contact })
     if (result.success === false) {
-      setContactError(result.message || 'Registration failed. Please try again.')
+      showError(result.message || 'Registration failed. Please try again.')
       return { narId: null, isNewUser: true }
     }
     const narId = result.data?.nar_id ?? result.data?.narId ?? result.nar_id ?? result.narId
@@ -168,6 +184,7 @@ function Login() {
     setLoading(true)
     setContactError('')
     setFullNameError('')
+    setFormError('')
     try {
       const { narId, isNewUser } = await lookupNarId()
       if (!narId) return
@@ -179,7 +196,7 @@ function Login() {
           try {
             await sendOtp({ narId, mode, contact })
           } catch (sendErr) {
-            setContactError(getErrorMessage(sendErr, 'Could not send OTP. Please try again.'))
+            showError(getErrorMessage(sendErr, 'Could not send OTP. Please try again.'))
             return
           }
         }
@@ -188,7 +205,7 @@ function Login() {
 
       navigate('/verify-otp', { state: { contact, mode, narId, newUser: isNewUser } })
     } catch (err) {
-      setContactError(getErrorMessage(err, 'Registration failed. Please try again.'))
+      showError(getErrorMessage(err, 'Registration failed. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -201,6 +218,7 @@ function Login() {
     setLoading(true)
     setContactError('')
     setFullNameError('')
+    setFormError('')
     try {
       const { narId, isNewUser } = await lookupNarId()
       if (!narId) return
@@ -209,13 +227,13 @@ function Login() {
       } catch (otpErr) {
         // A brand-new user may have no OTP to "resend" yet, so fall back to a first send.
         if (!isNewUser) {
-          setContactError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
+          showError(getErrorMessage(otpErr, 'Could not send OTP. Please try again.'))
           return
         }
         try {
           await sendOtp({ narId, mode, contact })
         } catch (sendErr) {
-          setContactError(getErrorMessage(sendErr, 'Could not send OTP. Please try again.'))
+          showError(getErrorMessage(sendErr, 'Could not send OTP. Please try again.'))
           return
         }
       }
@@ -224,7 +242,7 @@ function Login() {
       toast.success(mode === 'mobile' ? 'New OTP sent to your mobile number' : 'New OTP sent to your email')
       navigate('/verify-otp', { state: { contact, mode, narId, justResent: true } })
     } catch (err) {
-      setContactError(getErrorMessage(err, 'Registration failed. Please try again.'))
+      showError(getErrorMessage(err, 'Registration failed. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -287,6 +305,7 @@ function Login() {
                   setMode('mobile')
                   setContactError('')
                   setFullNameError('')
+                  setFormError('')
                 }}
                 className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
                   mode === 'mobile' ? 'bg-orange-400 text-slate-900 shadow' : 'text-slate-700'
@@ -305,6 +324,7 @@ function Login() {
                   setMode('email')
                   setContactError('')
                   setFullNameError('')
+                  setFormError('')
                 }}
                 className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${
                   mode === 'email' ? 'bg-orange-400 text-slate-900 shadow' : 'text-slate-700'
@@ -313,6 +333,12 @@ function Login() {
                 Email Login
               </button>
             </div>
+
+            {formError && (
+              <div role="alert" className="mb-3 rounded-lg bg-red-50/90 border border-red-300 px-3 py-2 text-sm font-medium text-red-700">
+                {formError}
+              </div>
+            )}
 
             <form onSubmit={handleContinue} className="space-y-3">
               <div>

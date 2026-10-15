@@ -90,10 +90,15 @@ function ClassParentDetails() {
         father_mobile: data.fatherMobile || '',
         father_email: data.fatherEmail || '',
         father_occupation: data.fatherOccupation || '',
+        father_qualification: data.fatherQualification || '',
+        father_aadhaar: data.fatherAadhaar || '',
         mother_name: data.motherName || '',
         mother_mobile: data.motherMobile || '',
         mother_email: data.motherEmail || '',
         mother_occupation: data.motherOccupation || '',
+        mother_qualification: data.motherQualification || '',
+        mother_aadhaar: data.motherAadhaar || '',
+        area_in_which_parent_can_contribute: contributionAreas.join(', '),
         other_area: data.otherAreaOfInterest || '',
       })
       saveApplicationSection(classId, 'parents', parentData)

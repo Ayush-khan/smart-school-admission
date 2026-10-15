@@ -80,7 +80,6 @@ function ClassReview() {
                 <OptionalField label="Sub-caste" value={student.subCaste} />
                 <OptionalField label="Student Aadhaar Number" value={student.studAadhar} />
                 <OptionalField label="Current School Class" value={student.currentSchoolClass} />
-                <OptionalField label="Achievements" value={student.acheivements} />
               </div>
             </ReviewSection>
 

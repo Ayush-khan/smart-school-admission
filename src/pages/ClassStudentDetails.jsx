@@ -55,7 +55,6 @@ function ClassStudentDetails() {
         category: data.category,
         stud_aadhar: data.studAadhar,
         current_school_class: data.currentSchoolClass,
-        acheivements: data.acheivements,
         class_id: classId,
         nar_id: getSessionInfo().narId,
       }
@@ -203,15 +202,6 @@ function ClassStudentDetails() {
               <div>
                 <label className={labelClass}>Current School Class</label>
                 <input className={inputClass} maxLength={50} {...register('currentSchoolClass')} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Achievements</label>
-                <textarea
-                  rows={3}
-                  className={inputClass}
-                  maxLength={500}
-                  {...register('acheivements')}
-                />
               </div>
             </div>
 
