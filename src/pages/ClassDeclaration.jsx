@@ -6,6 +6,7 @@ import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { saveAdmissionSignature } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getFormId } from '../utils/formId'
+import { saveApplicationSection } from '../utils/applicationData'
 import { nameRules } from '../utils/validators'
 
 const SIGNATURE_NAME_MAX = 100
@@ -105,6 +106,7 @@ function ClassDeclaration() {
         termsAccepted: termsChecked,
         privacyAccepted: privacyChecked,
       })
+      saveApplicationSection(classId, 'declaration', { completed: true })
       toast.success('Application submitted successfully')
       navigate(`/class/${classId}/application/payment`)
     } catch (err) {

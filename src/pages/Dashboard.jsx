@@ -8,9 +8,11 @@ import { getClasses, getClassesForUser, getEnquiryClasses, getDashboard, listOnl
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
-import { clearApplicationData, getResumePath } from '../utils/applicationData'
+import { clearApplicationData, getResumePath, isApplicationComplete } from '../utils/applicationData'
 import { formatClassLabel } from '../utils/classLabel'
 import { formatDMY } from '../utils/validators'
+
+const PAYMENT_INCOMPLETE_MESSAGE = 'Please complete all the required details before proceeding with the payment.'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -191,6 +193,10 @@ function Dashboard() {
   }
 
   const handlePayForm = (form) => {
+    if (!isApplicationComplete(form.class_id, form.form_id)) {
+      toast.error(PAYMENT_INCOMPLETE_MESSAGE, { id: 'payment-incomplete' })
+      return
+    }
     saveFormId(form.class_id, form.form_id)
     navigate(`/class/${form.class_id}/application/payment`)
   }
@@ -467,9 +473,19 @@ function Dashboard() {
                           </svg>
                         </span>
                       ) : (
-                        <button onClick={() => handlePayForm(form)} className="text-teal-600 hover:text-teal-800" title="Payment">
-                          💳
-                        </button>
+                        (() => {
+                          const ready = isApplicationComplete(form.class_id, form.form_id)
+                          return (
+                            <button
+                              onClick={() => handlePayForm(form)}
+                              aria-disabled={!ready}
+                              className={ready ? 'text-teal-600 hover:text-teal-800' : 'text-slate-400 opacity-50 cursor-not-allowed'}
+                              title={ready ? 'Payment' : PAYMENT_INCOMPLETE_MESSAGE}
+                            >
+                              💳
+                            </button>
+                          )
+                        })()
                       )}
                     </td>
                       <td className="px-4 py-3">

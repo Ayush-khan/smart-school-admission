@@ -4,8 +4,8 @@ import { getFormId } from './formId'
 // Saved data is kept per FORM (account + class + form id), not just per class,
 // so two forms in the same class (e.g. twins) never share data.
 // Before the first save there is no form id yet; that draft lives under "new".
-const storageKey = (classId) =>
-  getAccountStorageKey('applicationData', `${classId}_${getFormId(classId) || 'new'}`)
+const keyFor = (classId, formId) => getAccountStorageKey('applicationData', `${classId}_${formId || 'new'}`)
+const storageKey = (classId) => keyFor(classId, getFormId(classId))
 
 export function getApplicationData(classId) {
   const raw = localStorage.getItem(storageKey(classId))
@@ -43,11 +43,16 @@ export function getResumePath(classId) {
   return next ? `${base}/${next[0]}` : `${base}/review`
 }
 
-export function isApplicationComplete(classId) {
-  const data = getApplicationData(classId)
+// Pass formId to check one specific form (e.g. a row on the Dashboard);
+// without it, the form currently selected for this class is checked.
+export function isApplicationComplete(classId, formId) {
+  const raw = formId ? localStorage.getItem(keyFor(classId, formId)) : localStorage.getItem(storageKey(classId))
+  const data = raw ? JSON.parse(raw) : {}
   const hasStudent = data.student && Object.keys(data.student).length > 0
   const hasAddress = data.address && Object.keys(data.address).length > 0
   const hasParents = data.parents && Object.keys(data.parents).length > 0
   const hasDocuments = data.documents && Object.keys(data.documents).length > 0
-  return Boolean(hasStudent && hasAddress && hasParents && hasDocuments)
+  // Set only after the Declaration page is submitted successfully.
+  const hasDeclaration = data.declaration?.completed === true
+  return Boolean(hasStudent && hasAddress && hasParents && hasDocuments && hasDeclaration)
 }
