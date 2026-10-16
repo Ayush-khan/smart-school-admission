@@ -34,14 +34,17 @@ function EnquiryDetailsModal({ enquiry, classLabel, academicYear, onClose }) {
   const siblingText =
     sibling === '' ? '' : sibling === true || sibling === 1 || sibling === '1' || sibling === 'Y' || sibling === 'Yes' ? 'Yes' : 'No'
 
+  // One row: class + academic year in brackets, e.g. "Nursery (2026-2027)".
+  const hasYear = academicYear && academicYear !== '—'
+  const classWithYear = hasYear && classLabel && classLabel !== '—' ? `${classLabel} (${academicYear})` : classLabel
+
   const rows = [
     ['Enquiry No', pick(enquiry, 'enquiry_number', 'enquiry_id', 'id')],
     ['Status', pick(enquiry, 'status', 'enquiry_status')],
     ['Student Name', studentName],
     ['Date of Birth', formatDMY(dobRaw) || dobRaw],
     ['Gender', pick(enquiry, 'gender_name', 'gender')],
-    ['Class', classLabel],
-    ['Academic Year', academicYear && academicYear !== '—' ? academicYear : ''],
+    ['Class', classWithYear],
     ["Father's Name", pick(enquiry, 'father_name')],
     ["Mother's Name", pick(enquiry, 'mother_name')],
     ['Contact No.', pick(enquiry, 'contact_no', 'contact', 'mobile')],
@@ -94,5 +97,4 @@ function EnquiryDetailsModal({ enquiry, classLabel, academicYear, onClose }) {
     </div>
   )
 }
-
 export default EnquiryDetailsModal

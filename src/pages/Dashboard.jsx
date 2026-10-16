@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import EnquiryModal from '../components/EnquiryModal'
 import EnquiryDetailsModal from '../components/EnquiryDetailsModal'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faDownload } from '@fortawesome/free-solid-svg-icons'
 import logo from '../assets/evolvu-logo.webp'
 import { getClasses, getClassesForUser, getEnquiryClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
@@ -490,8 +492,13 @@ function Dashboard() {
                     </td>
                       <td className="px-4 py-3">
                         {isPaid(form) ? (
-                          <button onClick={() => handleDownloadForm(form)} className="text-slate-600 hover:text-slate-800" title="Download">
-                            ⬇️
+                          <button
+                            onClick={() => handleDownloadForm(form)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-teal-50 hover:text-teal-700 transition-colors"
+                            title="Download"
+                            aria-label="Download form"
+                          >
+                            <FontAwesomeIcon icon={faDownload} />
                           </button>
                         ) : (
                           <button onClick={() => handleEditForm(form)} className="text-blue-600 hover:text-blue-800" title="Edit">

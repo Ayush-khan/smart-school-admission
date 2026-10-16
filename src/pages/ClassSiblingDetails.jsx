@@ -5,11 +5,13 @@ import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
-import { saveAdmissionSection as saveSiblingToApi } from '../utils/saveAdmissionSection'
+import { saveAdmissionSection as saveToApi } from '../utils/saveAdmissionSection'
 import { getClassesSectionsOfActiveAcademicYear, getStudentParentInformation } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
-import { nameRules } from '../utils/validators'
-import { mapParentFromApi } from '../utils/parentFromSibling'
+import { nameRules, occupationRules, mobileRules } from '../utils/validators'
+import { mapParentFromApi, lockedFieldsFromApi, PARENT_LOOKUP_FIELDS } from '../utils/parentFromSibling'
+
+const CONTRIBUTION_OPTIONS = ['Cultural', 'Medical', 'Media', 'Academic']
 
 function getClassOptions(response) {
   const payload = response?.data ?? response
@@ -117,27 +119,96 @@ function ClassDropdown({ value, onChange, options, disabled, hasError }) {
   )
 }
 
+function MultiSelect({ value = [], onChange, options, placeholder, className }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const close = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
+
+  const toggle = (option) => {
+    onChange(value.includes(option) ? value.filter((item) => item !== option) : [...value, option])
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((isOpen) => !isOpen)}
+        className={`${className} flex items-center justify-between bg-white text-left min-h-[38px]`}
+      >
+        <span className={value.length ? 'text-slate-800' : 'text-slate-400'}>
+          {value.length ? value.map((item) => item.toUpperCase()).join(', ') : placeholder}
+        </span>
+        <span className="text-slate-400 text-xs ml-2">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-slate-300 rounded-lg shadow-lg py-1">
+          {options.map((option) => (
+            <label key={option} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox" checked={value.includes(option)} onChange={() => toggle(option)} />
+              {option.toUpperCase()}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ClassSiblingDetails() {
   const navigate = useNavigate()
   const { classId } = useParams()
   const [saving, setSaving] = useState(false)
+  const [browsing, setBrowsing] = useState(false)
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [classes, setClasses] = useState([])
   const savedData = getApplicationData(classId)
   const savedSibling = savedData.siblings?.list?.[0] || {}
   const [hasSibling, setHasSibling] = useState(Boolean(savedData.siblings?.hasSibling))
 
+  const savedClassSelection = savedSibling.classSelection ?? savedSibling.siblingClassId ?? savedSibling.classId ?? ''
+  const savedStudentName = savedSibling.studentName ?? savedSibling.name ?? savedSibling.siblingStudentId ?? savedSibling.studentId ?? ''
+
+  // Result of the last successful Browse: the sibling it was done for and what the API returned.
+  // Fields the API filled are read-only for as long as this is set.
+  const [lookup, setLookup] = useState(
+    savedData.siblings?.hasSibling && savedSibling.parentInfo?.parent
+      ? { classValue: String(savedClassSelection), name: String(savedStudentName).trim(), info: savedSibling.parentInfo }
+      : null,
+  )
+  const [lookupError, setLookupError] = useState('')
+  const locked = hasSibling && lookup ? lockedFieldsFromApi(lookup.info?.parent) : {}
+
+  const savedParents = { ...(savedData.parents || {}), ...locked }
+  const savedContributionAreas = savedParents.contributionAreas
+  const defaultContributionAreas = Array.isArray(savedContributionAreas)
+    ? savedContributionAreas
+    : typeof savedContributionAreas === 'string'
+      ? savedContributionAreas.split(',').map((area) => area.trim()).filter(Boolean)
+      : []
+
   const {
     register,
     control,
     handleSubmit,
+    setValue,
+    trigger,
+    getValues,
     formState: { errors },
   } = useForm({
     mode: 'onChange',
     shouldUnregister: true,
     defaultValues: {
-      siblingClassId: savedSibling.classSelection ?? savedSibling.siblingClassId ?? savedSibling.classId ?? '',
-      studentName: savedSibling.studentName ?? savedSibling.name ?? savedSibling.siblingStudentId ?? savedSibling.studentId ?? '',
+      ...savedParents,
+      contributionAreas: defaultContributionAreas,
+      siblingClassId: savedClassSelection,
+      studentName: savedStudentName,
     },
   })
 
@@ -160,60 +231,121 @@ function ClassSiblingDetails() {
     }
   }, [])
 
-  const inputClass = (error) =>
+  // Parent details fetched for one sibling must not stay behind for another one.
+  const dropLookup = () => {
+    setLookup(null)
+    PARENT_LOOKUP_FIELDS.forEach((field) => setValue(field, ''))
+  }
+  const handleSiblingEdited = ({ classValue, name }) => {
+    setLookupError('')
+    if (!lookup) return
+    const sameClass = classValue === undefined || String(classValue) === lookup.classValue
+    const sameName = name === undefined || name.trim() === lookup.name
+    if (!sameClass || !sameName) dropLookup()
+  }
+
+  const handleBrowse = async () => {
+    setLookupError('')
+    const valid = await trigger(['siblingClassId', 'studentName'])
+    if (!valid) return
+    const values = getValues()
+    const selectedClass = classes.find((item) => item.value === String(values.siblingClassId))
+    const studentName = String(values.studentName).trim()
+
+    setBrowsing(true)
+    try {
+      const result = await getStudentParentInformation({
+        classId: selectedClass?.classId,
+        sectionId: selectedClass?.sectionId,
+        studentName,
+      })
+      if (result?.success === false) {
+        throw new Error(result.message || 'Could not find this student in the selected class.')
+      }
+      const found = result?.data ?? result
+      if (!found?.parent || typeof found.parent !== 'object') {
+        throw new Error(result?.message || 'No parent details were found for this student.')
+      }
+      Object.entries(mapParentFromApi(found.parent)).forEach(([field, value]) =>
+        setValue(field, value, { shouldValidate: true, shouldDirty: true }),
+      )
+      setLookup({ classValue: String(values.siblingClassId), name: studentName, info: found })
+      toast.success('Parent details fetched')
+    } catch (error) {
+      setLookup(null)
+      setLookupError(getErrorMessage(error, 'Could not fetch the student details.'))
+    } finally {
+      setBrowsing(false)
+    }
+  }
+
+  const siblingInputClass = (error) =>
     `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
       error ? 'border-red-500' : 'border-slate-300'
     }`
+  const inputClass = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1'
+  const lockedClass = ' bg-slate-100 text-slate-500 cursor-not-allowed'
+  const lockProps = (field) => (locked[field] ? { readOnly: true, title: 'Fetched from school records' } : {})
+  const cls = (field) => `${inputClass}${locked[field] ? lockedClass : ''}`
   const reqStar = <span className="text-red-500">*</span>
   const errClass = 'text-xs text-red-600 mt-1'
 
   const onSubmit = async (data) => {
-    const selectedClass = classes.find((item) => item.value === String(data.siblingClassId))
+    // Sibling fields and parent fields live in one form; split them for saving.
+    const { siblingClassId, studentName, ...parentFields } = data
+    const contributionAreas = Array.isArray(parentFields.contributionAreas) ? parentFields.contributionAreas : []
+    const parentData = { ...parentFields, contributionAreas }
+
+    const selectedClass = classes.find((item) => item.value === String(siblingClassId))
     const sibling = {
       siblingClassId: hasSibling ? selectedClass?.classId || '' : '',
-      classSelection: hasSibling ? data.siblingClassId : '',
+      classSelection: hasSibling ? siblingClassId : '',
       sectionId: hasSibling ? selectedClass?.sectionId || '' : '',
       className: hasSibling ? selectedClass?.label || '' : '',
-      studentName: hasSibling ? data.studentName : '',
-      siblingStudentId: hasSibling ? data.studentName : '',
+      studentName: hasSibling ? studentName : '',
+      siblingStudentId: hasSibling ? studentName : '',
     }
+    if (hasSibling && lookup) sibling.parentInfo = lookup.info
+
     setSaving(true)
     try {
-      // Look up the sibling in the selected class/section by name before saving.
-      if (hasSibling) {
-        const lookup = await getStudentParentInformation({
-          classId: sibling.siblingClassId,
-          sectionId: sibling.sectionId,
-          studentName: String(data.studentName).trim(),
-        })
-        if (lookup?.success === false) {
-          throw new Error(lookup.message || 'Could not find this student in the selected class.')
-        }
-        const found = lookup?.data ?? lookup
-        if (found === null || (Array.isArray(found) && found.length === 0)) {
-          throw new Error('No student with this name was found in the selected class.')
-        }
-        sibling.parentInfo = found
-      }
-      await saveSiblingToApi(classId, {
+      await saveToApi(classId, {
         sibling: hasSibling ? 'Yes' : 'No',
-        sibling_class_id: hasSibling
-          ? `${sibling.siblingClassId}^${sibling.sectionId}`
-          : '',
+        sibling_class_id: hasSibling ? `${sibling.siblingClassId}^${sibling.sectionId}` : '',
         sibling_section_id: sibling.sectionId,
         sibling_student_id: sibling.siblingStudentId,
+        father_name: parentData.fatherName || '',
+        father_mobile: parentData.fatherMobile || '',
+        father_email: parentData.fatherEmail || '',
+        father_occupation: parentData.fatherOccupation || '',
+        father_qualification: parentData.fatherQualification || '',
+        father_aadhaar: parentData.fatherAadhaar || '',
+        mother_name: parentData.motherName || '',
+        mother_mobile: parentData.motherMobile || '',
+        mother_email: parentData.motherEmail || '',
+        mother_occupation: parentData.motherOccupation || '',
+        mother_qualification: parentData.motherQualification || '',
+        mother_aadhaar: parentData.motherAadhaar || '',
+        area_in_which_parent_can_contribute: contributionAreas.join(', '),
+        other_area: parentData.otherAreaOfInterest || '',
+        // SMS number follows the father/mother choice.
+        sms_sending_phone_no:
+          parentData.smsContact === 'father'
+            ? parentData.fatherMobile || ''
+            : parentData.smsContact === 'mother'
+              ? parentData.motherMobile || ''
+              : '',
       })
       saveApplicationSection(classId, 'siblings', {
         hasSibling,
         list: hasSibling ? [sibling] : [],
       })
-      // Parent Details opens pre-filled with the sibling's parent info (cleared when no sibling).
-      saveApplicationSection(classId, 'parentsPrefill', hasSibling ? mapParentFromApi(sibling.parentInfo?.parent) : {})
-      toast.success('Sibling details saved')
-      navigate(`/class/${classId}/application/parents`)
+      saveApplicationSection(classId, 'parents', parentData)
+      toast.success('Sibling and parent details saved')
+      navigate(`/class/${classId}/application/documents`)
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not save sibling details.'))
+      toast.error(getErrorMessage(error, 'Could not save sibling and parent details.'))
     } finally {
       setSaving(false)
     }
@@ -234,7 +366,10 @@ function ClassSiblingDetails() {
                 type="checkbox"
                 className="h-4 w-4"
                 checked={hasSibling}
-                onChange={(event) => setHasSibling(event.target.checked)}
+                onChange={(event) => {
+                  setHasSibling(event.target.checked)
+                  if (!event.target.checked && lookup) dropLookup()
+                }}
               />
               <span className="text-sm text-slate-500">
                 (If sibling is in the same school and of the same parent)
@@ -252,7 +387,10 @@ function ClassSiblingDetails() {
                     render={({ field }) => (
                       <ClassDropdown
                         value={field.value}
-                        onChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value)
+                          handleSiblingEdited({ classValue: value })
+                        }}
                         options={classes}
                         disabled={loadingClasses || classes.length === 0}
                         hasError={Boolean(errors.siblingClassId)}
@@ -266,16 +404,196 @@ function ClassSiblingDetails() {
                 </div>
                 <div>
                   <label className={labelClass}>{reqStar} Student Name</label>
-                  <input
-                    className={inputClass(errors.studentName)}
-                    maxLength={100}
-                    placeholder="Enter full name as per School Records"
-                    {...register('studentName', nameRules("sibling's name", true))}
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      className={siblingInputClass(errors.studentName || lookupError)}
+                      maxLength={100}
+                      placeholder="Enter full name as per School Records"
+                      {...register('studentName', {
+                        ...nameRules("sibling's name", true),
+                        onChange: (event) => handleSiblingEdited({ name: event.target.value }),
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleBrowse}
+                      disabled={browsing || loadingClasses}
+                      className="bg-navy text-white text-sm font-medium px-4 rounded-lg hover:bg-navy-light disabled:opacity-60 whitespace-nowrap"
+                    >
+                      {browsing ? 'Searching...' : 'Browse'}
+                    </button>
+                  </div>
                   {errors.studentName && <p className={errClass}>{errors.studentName.message}</p>}
+                  {lookupError && <p className={errClass}>{lookupError}</p>}
+                  {!lookupError && !errors.studentName && (
+                    <p className="text-xs text-slate-400 mt-1">Click Browse to fill the parent details below from school records.</p>
+                  )}
                 </div>
               </div>
             )}
+
+            <div className="pt-6 border-t border-slate-200">
+              <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
+                👤 Parent's Information
+              </h2>
+              <p className="text-sm text-slate-600 mb-4">
+                Kindly ensure your contact details are true and correct. This number will be used for all further communication
+              </p>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className={labelClass}>{reqStar} Father's Name</label>
+                <input className={cls('fatherName')} {...lockProps('fatherName')} {...register('fatherName', nameRules("father's name", true))} />
+                {errors.fatherName && <p className={errClass}>{errors.fatherName.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>{reqStar} Email Id</label>
+                <input
+                  className={cls('fatherEmail')}
+                  {...lockProps('fatherEmail')}
+                  {...register('fatherEmail', {
+                    required: 'Required',
+                    pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
+                  })}
+                />
+                {errors.fatherEmail && <p className={errClass}>{errors.fatherEmail.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>{reqStar} Mobile Number</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500">+91</span>
+                  <input className={cls('fatherMobile')} {...lockProps('fatherMobile')} {...register('fatherMobile', mobileRules(true))} />
+                </div>
+                {errors.fatherMobile && <p className={errClass}>{errors.fatherMobile.message}</p>}
+                <label className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
+                  <input type="radio" value="father" {...register('smsContact', { required: 'Please select where to receive SMS' })} />
+                  Set to receive SMS at this no
+                </label>
+              </div>
+              <div>
+                <label className={labelClass}>{reqStar} Father Occupation</label>
+                <input className={inputClass} {...register('fatherOccupation', occupationRules('father occupation', true))} />
+                {errors.fatherOccupation && <p className={errClass}>{errors.fatherOccupation.message}</p>}
+              </div>
+
+              <div>
+                <label className={labelClass}>{reqStar} Mother's Name</label>
+                <input className={cls('motherName')} {...lockProps('motherName')} {...register('motherName', nameRules("mother's name", true))} />
+                {errors.motherName && <p className={errClass}>{errors.motherName.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>{reqStar} Email Id</label>
+                <input
+                  className={cls('motherEmail')}
+                  {...lockProps('motherEmail')}
+                  {...register('motherEmail', {
+                    required: 'Required',
+                    pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
+                  })}
+                />
+                {errors.motherEmail && <p className={errClass}>{errors.motherEmail.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>{reqStar} Mobile Number</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500">+91</span>
+                  <input className={cls('motherMobile')} {...lockProps('motherMobile')} {...register('motherMobile', mobileRules(true))} />
+                </div>
+                {errors.motherMobile && <p className={errClass}>{errors.motherMobile.message}</p>}
+                <label className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
+                  <input type="radio" value="mother" {...register('smsContact', { required: 'Please select where to receive SMS' })} />
+                  Set to receive SMS at this no
+                </label>
+                {errors.smsContact && <p className={errClass}>{errors.smsContact.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>{reqStar} Mother Occupation</label>
+                <input className={inputClass} {...register('motherOccupation', occupationRules('mother occupation', true))} />
+                {errors.motherOccupation && <p className={errClass}>{errors.motherOccupation.message}</p>}
+              </div>
+
+              <div>
+                <label className={labelClass}>Mother Aadhaar Card No.</label>
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  maxLength={12}
+                  {...register('motherAadhaar', {
+                    pattern: { value: /^\d{12}$/, message: 'Enter a valid Aadhar No.' },
+                    onChange: (event) => { event.target.value = event.target.value.replace(/\D/g, '') },
+                  })}
+                />
+                {errors.motherAadhaar && <p className={errClass}>{errors.motherAadhaar.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Father Aadhaar Card No.</label>
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  maxLength={12}
+                  {...register('fatherAadhaar', {
+                    pattern: { value: /^\d{12}$/, message: 'Enter a valid Aadhar No.' },
+                    onChange: (event) => { event.target.value = event.target.value.replace(/\D/g, '') },
+                  })}
+                />
+                {errors.fatherAadhaar && <p className={errClass}>{errors.fatherAadhaar.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Mother Qualification</label>
+                <input
+                  className={inputClass}
+                  maxLength={50}
+                  {...register('motherQualification', {
+                    pattern: {
+                      value: /^[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
+                      message: 'Only letters, numbers, spaces and . & - are allowed',
+                    },
+                    validate: (value) => !/^\d+$/.test(value || '') || /^\d{1,2}$/.test(value) || 'Number can be maximum 2 digits',
+                  })}
+                />
+                {errors.motherQualification && <p className={errClass}>{errors.motherQualification.message}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Father Qualification</label>
+                <input
+                  className={inputClass}
+                  maxLength={50}
+                  {...register('fatherQualification', {
+                    pattern: {
+                      value: /^[A-Za-z0-9][A-Za-z0-9 .&-]*$/,
+                      message: 'Only letters, numbers, spaces and . & - are allowed',
+                    },
+                    validate: (value) => !/^\d+$/.test(value || '') || /^\d{1,2}$/.test(value) || 'Number can be maximum 2 digits',
+                  })}
+                />
+                {errors.fatherQualification && <p className={errClass}>{errors.fatherQualification.message}</p>}
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Areas in which parent can contribute</label>
+                <Controller
+                  name="contributionAreas"
+                  control={control}
+                  render={({ field }) => (
+                    <MultiSelect
+                      value={Array.isArray(field.value) ? field.value : []}
+                      onChange={field.onChange}
+                      options={CONTRIBUTION_OPTIONS}
+                      placeholder="Select one or more"
+                      className={inputClass}
+                    />
+                  )}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Other area of interest</label>
+                <input
+                  className={inputClass}
+                  placeholder="Other area of interest"
+                  {...register('otherAreaOfInterest')}
+                />
+              </div>
+            </div>
+            </div>
 
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
               <button

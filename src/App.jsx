@@ -6,9 +6,7 @@ import Dashboard from './pages/Dashboard'
 import ClassInstructions from './pages/ClassInstructions'
 import ClassStudentDetails from './pages/ClassStudentDetails'
 import ClassAddressDetails from './pages/ClassAddressDetails'
-import ClassParentDetails from './pages/ClassParentDetails'
 import ClassSiblingDetails from './pages/ClassSiblingDetails'
-import ClassAdditionalInfo from './pages/ClassAdditionalInfo'
 import ClassDocuments from './pages/ClassDocuments'
 import ClassReview from './pages/ClassReview'
 import ClassDeclaration from './pages/ClassDeclaration'
@@ -31,13 +29,21 @@ function App() {
       <Route path="/class/:classId/instructions" element={<ClassInstructions />} />
       <Route path="/class/:classId/application/student" element={<ClassStudentDetails />} />
       <Route path="/class/:classId/application/address" element={<ClassAddressDetails />} />
-      <Route path="/class/:classId/application/parents" element={<ClassParentDetails />} />
+      {/* Parent Details is now part of the Sibling Details page; keep old links working. */}
+      <Route
+        path="/class/:classId/application/parents"
+        element={<Navigate to="../siblings" relative="path" replace />}
+      />
       <Route path="/class/:classId/application/siblings" element={<ClassSiblingDetails />} />
       <Route
         path="/class/:classId/application/academic"
-        element={<Navigate to="../additional" relative="path" replace />}
+        element={<Navigate to="../student" relative="path" replace />}
       />
-      <Route path="/class/:classId/application/additional" element={<ClassAdditionalInfo />} />
+      {/* Additional Info is now part of Student Details; keep old links working. */}
+      <Route
+        path="/class/:classId/application/additional"
+        element={<Navigate to="../student" relative="path" replace />}
+      />
       <Route path="/class/:classId/application/documents" element={<ClassDocuments />} />
       <Route path="/class/:classId/application/review" element={<ClassReview />} />
       <Route path="/class/:classId/application/declaration" element={<ClassDeclaration />} />

@@ -18,6 +18,8 @@ const FIELD_KEYS = {
   motherAadhaar: 'm_adhar_no',
 }
 
+export const PARENT_LOOKUP_FIELDS = Object.keys(FIELD_KEYS)
+
 const clean = (field, value) => {
   const text = String(value ?? '').trim()
   if (!text) return ''
@@ -49,9 +51,8 @@ const LOCK_RULES = {
   motherMobile: (v) => MOBILE_REGEX.test(v),
 }
 
-export function getLockedParentFields(siblings) {
-  if (!siblings?.hasSibling) return {}
-  const mapped = mapParentFromApi(siblings.list?.[0]?.parentInfo?.parent)
+export function lockedFieldsFromApi(parent) {
+  const mapped = mapParentFromApi(parent)
   const locked = {}
   for (const [field, isValid] of Object.entries(LOCK_RULES)) {
     if (mapped[field] && isValid(mapped[field])) locked[field] = mapped[field]

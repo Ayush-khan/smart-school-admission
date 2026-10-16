@@ -103,21 +103,16 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onVi
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-800">{doc.name}</p>
+          <p className="text-sm font-semibold text-slate-800">
+            {doc.required && !missing && <span className="text-base font-bold text-red-600 mr-1 leading-none">*</span>}
+            {doc.name}
+          </p>
           <p className="text-xs text-slate-500 mt-0.5">
             {imageOnly ? 'JPG, PNG only' : 'PDF, JPG, JPEG, PNG'} · Max {MAX_FILE_SIZE_KB} KB
           </p>
         </div>
 
-        {doc.required ? (
-          missing ? (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 bg-red-100 text-red-700">
-              Required
-            </span>
-          ) : (
-            <span className="text-base font-bold text-red-600 flex-shrink-0 leading-none">*</span>
-          )
-        ) : (
+        {!doc.required && (
           <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 bg-slate-100 text-slate-600">
             Optional
           </span>
@@ -208,6 +203,12 @@ function DocumentUploadCard({ doc, file, busy, missing, onUpload, onRemove, onVi
               <Trash2 size={16} />
             </button>
           </div>
+        </div>
+      )}
+
+      {doc.required && missing && (
+        <div className="mt-3">
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">Required</span>
         </div>
       )}
 
@@ -457,7 +458,7 @@ function ClassDocuments() {
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={6}>
+      <ApplicationStepperLayout currentStep={4}>
         <div className="bg-white rounded-xl shadow-sm p-6">
 
           <h2 className="text-center text-teal-700 font-semibold mb-1 border-b border-slate-200 pb-3">
@@ -525,7 +526,7 @@ function ClassDocuments() {
               type="button"
               onClick={() =>
                 navigate(
-                  `/class/${classId}/application/additional`
+                  `/class/${classId}/application/siblings`
                 )
               }
               className="bg-slate-100 text-slate-700 text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-slate-200"
@@ -548,5 +549,4 @@ function ClassDocuments() {
     </ClassLayout>
   )
 }
-
 export default ClassDocuments

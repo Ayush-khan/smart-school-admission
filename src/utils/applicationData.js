@@ -34,9 +34,9 @@ export function getResumePath(classId) {
   if (!has(data.student)) return `${base}/review`
   const sections = [
     ['address', has(data.address)],
+    // Siblings and parents are saved together on one page.
     ['siblings', data.siblings !== undefined && data.siblings !== null],
-    ['parents', has(data.parents)],
-    ['additional', has(data.additional)],
+    ['siblings', has(data.parents)],
     ['documents', has(data.documents)],
   ]
   const next = sections.find(([, done]) => !done)

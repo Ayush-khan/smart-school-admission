@@ -25,7 +25,17 @@ function ClassStudentDetails() {
     handleSubmit,
     control,
     formState: { errors },
-  } = useForm({ defaultValues: savedData.student || {}, mode: 'onChange' })
+  } = useForm({
+    // Additional-info fields used to be saved separately; keep showing drafts saved that way.
+    defaultValues: {
+      achievements: savedData.additional?.achievements || '',
+      bloodGroup: savedData.additional?.bloodGroup || '',
+      studAadhar: savedData.additional?.studAadhar || '',
+      currentSchoolClass: savedData.additional?.currentSchoolClass || '',
+      ...(savedData.student || {}),
+    },
+    mode: 'onChange',
+  })
 
   const [saving, setSaving] = useState(false)
 
@@ -53,6 +63,11 @@ function ClassStudentDetails() {
         caste: data.caste,
         subcaste: data.subCaste,
         category: data.category,
+        // Additional information (all optional)
+        acheivements: data.achievements || '',
+        blood_group: data.bloodGroup || undefined,
+        stud_aadhar: data.studAadhar || '',
+        current_school_class: data.currentSchoolClass || '',
         class_id: classId,
         nar_id: getSessionInfo().narId,
       }
@@ -179,6 +194,52 @@ function ClassStudentDetails() {
                   options={['General', 'OBC', 'SC', 'ST', 'Other']}
                 />
                 {errors.category && <p className={errClass}>{errors.category.message}</p>}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <h2 className="text-center text-teal-700 font-semibold mb-1 border-b border-slate-200 pb-3">
+                ⭐ Additional Information
+              </h2>
+              <p className="text-sm text-slate-500 mt-3 mb-6 text-center">All fields in this section are optional.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelClass}>Student Aadhaar Card No.</label>
+                  <input
+                    className={inputClass}
+                    inputMode="numeric"
+                    maxLength={12}
+                    {...register('studAadhar', {
+                      onChange: (event) => {
+                        event.target.value = event.target.value.replace(/\D/g, '').slice(0, 12)
+                      },
+                      validate: (value) => !value || /^\d{12}$/.test(value) || 'Enter a valid student Aadhaar number.',
+                    })}
+                  />
+                  {errors.studAadhar && <p className={errClass}>{errors.studAadhar.message}</p>}
+                </div>
+                <div>
+                  <label className={labelClass}>Current School and Class</label>
+                  <input className={inputClass} maxLength={50} {...register('currentSchoolClass')} />
+                </div>
+                <div>
+                  <label className={labelClass}>Blood Group</label>
+                  <CustomSelect
+                    control={control}
+                    name="bloodGroup"
+                    options={['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']}
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className={labelClass}>Achievements (If Any)</label>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Any notable achievements (academic, sports, cultural, etc.)"
+                  className={inputClass}
+                  {...register('achievements')}
+                />
               </div>
             </div>
 

@@ -57,7 +57,7 @@ function ClassReview() {
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={7}>
+      <ApplicationStepperLayout currentStep={5}>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
             📝 Review Your Application
@@ -77,6 +77,10 @@ function ClassReview() {
                 <OptionalField label="Middle Name" value={student.middleName} />
                 <OptionalField label="Caste" value={student.caste} />
                 <OptionalField label="Sub-caste" value={student.subCaste} />
+                <OptionalField label="Student Aadhaar Card No." value={student.studAadhar ?? additional.studAadhar} />
+                <OptionalField label="Current School and Class" value={student.currentSchoolClass ?? additional.currentSchoolClass} />
+                <OptionalField label="Blood Group" value={student.bloodGroup ?? additional.bloodGroup} />
+                <OptionalField label="Achievements" value={student.achievements ?? additional.achievements} />
               </div>
             </ReviewSection>
 
@@ -106,7 +110,7 @@ function ClassReview() {
               )}
             </ReviewSection>
 
-            <ReviewSection title="Parent Information" editPath={`${base}/parents`} navigate={navigate}>
+            <ReviewSection title="Parent Information" editPath={`${base}/siblings`} navigate={navigate}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Father's Name" value={parents.fatherName} />
                 <Field label="Father Mobile" value={parents.fatherMobile} />
@@ -131,15 +135,6 @@ function ClassReview() {
                   value={Array.isArray(parents.contributionAreas) ? parents.contributionAreas.join(', ') : parents.contributionAreas}
                 />
                 <Field label="Other area" value={parents.otherAreaOfInterest} />
-              </div>
-            </ReviewSection>
-
-            <ReviewSection title="Additional Information" editPath={`${base}/additional`} navigate={navigate}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <OptionalField label="Student Aadhaar Card No." value={additional.studAadhar} />
-                <OptionalField label="Current School and Class" value={additional.currentSchoolClass} />
-                <OptionalField label="Blood Group" value={additional.bloodGroup} />
-                <OptionalField label="Achievements" value={additional.achievements} />
               </div>
             </ReviewSection>
 
