@@ -8,6 +8,7 @@ import { getClasses, getClassesForUser, getEnquiryClasses, getDashboard, listOnl
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
 import { clearFormId, saveFormId } from '../utils/formId'
+import { clearApplicationData, getResumePath } from '../utils/applicationData'
 import { formatClassLabel } from '../utils/classLabel'
 import { formatDMY } from '../utils/validators'
 
@@ -173,6 +174,7 @@ function Dashboard() {
     setDropdownOpen(false)
     const classId = selectedClass.id ?? selectedClass.class_id
     clearFormId(classId)
+    clearApplicationData(classId) // new admission starts empty; older forms keep their own saved data
     navigate(`/class/${classId}/instructions`, {
       state: { academicYr: selectedClass.academic_yr ?? selectedClass.academicYear },
     })
@@ -185,7 +187,7 @@ function Dashboard() {
 
   const handleEditForm = (form) => {
     saveFormId(form.class_id, form.form_id)
-    navigate(`/class/${form.class_id}/application/review`)
+    navigate(getResumePath(form.class_id))
   }
 
   const handlePayForm = (form) => {
