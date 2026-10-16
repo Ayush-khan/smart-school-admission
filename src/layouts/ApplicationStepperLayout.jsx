@@ -5,8 +5,8 @@ import { getApplicationData } from '../utils/applicationData'
 const steps = [
   'Student Details',
   'Address',
-  'Parent Details',
   'Sibling Details',
+  'Parent Details',
   'Additional Info',
   'Documents',
   'Review',
@@ -20,8 +20,8 @@ function getSavedSteps(data) {
   return {
     1: Boolean(data.student && Object.keys(data.student).length > 0),
     2: Boolean(data.address && Object.keys(data.address).length > 0),
-    3: Boolean(data.parents && Object.keys(data.parents).length > 0),
-    4: data.siblings !== undefined && data.siblings !== null,
+    3: data.siblings !== undefined && data.siblings !== null,
+    4: Boolean(data.parents && Object.keys(data.parents).length > 0),
     5: Boolean(data.additional && Object.keys(data.additional).length > 0),
     6: Boolean(data.documents && Object.keys(data.documents).length > 0),
   }

@@ -29,6 +29,21 @@ export async function getClassesSectionsOfActiveAcademicYear() {
 }
 
 // ---------------------------------------------------------------------------
+// Get Student + Parent information for a sibling
+// GET /api/get_student_parent_information?class_id=&section_id=&student_name=
+// ---------------------------------------------------------------------------
+export async function getStudentParentInformation({ classId, sectionId, studentName }) {
+  const response = await apiClient.get('/api/get_student_parent_information', {
+    params: {
+      class_id: classId,
+      section_id: sectionId,
+      student_name: studentName,
+    },
+  })
+  return response.data
+}
+
+// ---------------------------------------------------------------------------
 // Get Form Fee — GET /api/admission/form-fee
 // ---------------------------------------------------------------------------
 export async function getFormFee(params = {}) {

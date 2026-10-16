@@ -6,9 +6,10 @@ import ClassLayout from '../layouts/ClassLayout'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { saveAdmissionSection as saveSiblingToApi } from '../utils/saveAdmissionSection'
-import { getClassesSectionsOfActiveAcademicYear } from '../services/applicationService'
+import { getClassesSectionsOfActiveAcademicYear, getStudentParentInformation } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { nameRules } from '../utils/validators'
+import { mapParentFromApi } from '../utils/parentFromSibling'
 
 function getClassOptions(response) {
   const payload = response?.data ?? response
@@ -179,6 +180,22 @@ function ClassSiblingDetails() {
     }
     setSaving(true)
     try {
+      // Look up the sibling in the selected class/section by name before saving.
+      if (hasSibling) {
+        const lookup = await getStudentParentInformation({
+          classId: sibling.siblingClassId,
+          sectionId: sibling.sectionId,
+          studentName: String(data.studentName).trim(),
+        })
+        if (lookup?.success === false) {
+          throw new Error(lookup.message || 'Could not find this student in the selected class.')
+        }
+        const found = lookup?.data ?? lookup
+        if (found === null || (Array.isArray(found) && found.length === 0)) {
+          throw new Error('No student with this name was found in the selected class.')
+        }
+        sibling.parentInfo = found
+      }
       await saveSiblingToApi(classId, {
         sibling: hasSibling ? 'Yes' : 'No',
         sibling_class_id: hasSibling
@@ -191,8 +208,10 @@ function ClassSiblingDetails() {
         hasSibling,
         list: hasSibling ? [sibling] : [],
       })
+      // Parent Details opens pre-filled with the sibling's parent info (cleared when no sibling).
+      saveApplicationSection(classId, 'parentsPrefill', hasSibling ? mapParentFromApi(sibling.parentInfo?.parent) : {})
       toast.success('Sibling details saved')
-      navigate(`/class/${classId}/application/additional`)
+      navigate(`/class/${classId}/application/parents`)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save sibling details.'))
     } finally {
@@ -202,7 +221,7 @@ function ClassSiblingDetails() {
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={4}>
+      <ApplicationStepperLayout currentStep={3}>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
             👨‍👩‍👧 Sibling Information
@@ -250,6 +269,7 @@ function ClassSiblingDetails() {
                   <input
                     className={inputClass(errors.studentName)}
                     maxLength={100}
+                    placeholder="Enter full name as per School Records"
                     {...register('studentName', nameRules("sibling's name", true))}
                   />
                   {errors.studentName && <p className={errClass}>{errors.studentName.message}</p>}
@@ -260,7 +280,7 @@ function ClassSiblingDetails() {
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
               <button
                 type="button"
-                onClick={() => navigate(`/class/${classId}/application/parents`)}
+                onClick={() => navigate(`/class/${classId}/application/address`)}
                 className="bg-slate-100 text-slate-700 text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-slate-200"
               >
                 Previous

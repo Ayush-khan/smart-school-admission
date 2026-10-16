@@ -183,7 +183,7 @@ function ClassAcademicDetails() {
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
               <button
                 type="button"
-                onClick={() => navigate(`/class/${classId}/application/siblings`)}
+                onClick={() => navigate(`/class/${classId}/application/parents`)}
                 className="bg-slate-100 text-slate-700 text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-slate-200"
               >
                 Previous

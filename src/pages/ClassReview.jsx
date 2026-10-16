@@ -91,6 +91,21 @@ function ClassReview() {
               </div>
             </ReviewSection>
 
+            <ReviewSection title="Sibling Information" editPath={`${base}/siblings`} navigate={navigate}>
+              {siblings.hasSibling && siblings.list?.length > 0 ? (
+                <div className="space-y-2">
+                  {siblings.list.map((s, i) => (
+                    <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
+                      <Field label="Student Name" value={s.studentName ?? s.name ?? s.siblingStudentId} />
+                      <Field label="Class" value={s.className} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No sibling in this school.</p>
+              )}
+            </ReviewSection>
+
             <ReviewSection title="Parent Information" editPath={`${base}/parents`} navigate={navigate}>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Father's Name" value={parents.fatherName} />
@@ -117,21 +132,6 @@ function ClassReview() {
                 />
                 <Field label="Other area" value={parents.otherAreaOfInterest} />
               </div>
-            </ReviewSection>
-
-            <ReviewSection title="Sibling Information" editPath={`${base}/siblings`} navigate={navigate}>
-              {siblings.hasSibling && siblings.list?.length > 0 ? (
-                <div className="space-y-2">
-                  {siblings.list.map((s, i) => (
-                    <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100 pb-2 last:border-0">
-                      <Field label="Student Name" value={s.studentName ?? s.name ?? s.siblingStudentId} />
-                      <Field label="Class" value={s.className} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No sibling in this school.</p>
-              )}
             </ReviewSection>
 
             <ReviewSection title="Additional Information" editPath={`${base}/additional`} navigate={navigate}>

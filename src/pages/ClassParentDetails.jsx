@@ -8,6 +8,7 @@ import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { nameRules, occupationRules, mobileRules } from '../utils/validators'
 import { saveAdmissionSection as saveParentsToApi } from '../utils/saveAdmissionSection'
 import { getErrorMessage } from '../services/apiHelpers'
+import { getLockedParentFields } from '../utils/parentFromSibling'
 
 const CONTRIBUTION_OPTIONS = ['Cultural', 'Medical', 'Media', 'Academic']
 
@@ -58,7 +59,10 @@ function ClassParentDetails() {
   const { classId } = useParams()
   const [saving, setSaving] = useState(false)
   const savedData = getApplicationData(classId)
-  const savedParents = savedData.parents || {}
+  // Values from the sibling lookup are shown until the parents section is saved.
+  // Email/mobile that came from the sibling lookup are read-only (empty ones stay editable).
+  const locked = getLockedParentFields(savedData.siblings)
+  const savedParents = { ...(savedData.parents || {}), ...(savedData.parentsPrefill || {}), ...locked }
   const savedContributionAreas = savedParents.contributionAreas
   const defaultContributionAreas = Array.isArray(savedContributionAreas)
     ? savedContributionAreas
@@ -102,8 +106,9 @@ function ClassParentDetails() {
         other_area: data.otherAreaOfInterest || '',
       })
       saveApplicationSection(classId, 'parents', parentData)
+      saveApplicationSection(classId, 'parentsPrefill', {})
       toast.success('Parent details saved')
-      navigate(`/class/${classId}/application/siblings`)
+      navigate(`/class/${classId}/application/additional`)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save parent details.'))
     } finally {
@@ -113,12 +118,15 @@ function ClassParentDetails() {
 
   const inputClass = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
   const labelClass = 'block text-sm font-medium text-slate-700 mb-1'
+  const lockedClass = ' bg-slate-100 text-slate-500 cursor-not-allowed'
+  const lockProps = (field) => (locked[field] ? { readOnly: true, title: 'Fetched from school records' } : {})
+  const cls = (field) => `${inputClass}${locked[field] ? lockedClass : ''}`
   const reqStar = <span className="text-red-500">*</span>
   const errClass = 'text-xs text-red-600 mt-1'
 
   return (
     <ClassLayout>
-      <ApplicationStepperLayout currentStep={3}>
+      <ApplicationStepperLayout currentStep={4}>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
             👤 Parent's Information
@@ -128,13 +136,14 @@ function ClassParentDetails() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className={labelClass}>{reqStar} Father's Name</label>
-                <input className={inputClass} {...register('fatherName', nameRules("father's name", true))} />
+                <input className={cls('fatherName')} {...lockProps('fatherName')} {...register('fatherName', nameRules("father's name", true))} />
                 {errors.fatherName && <p className={errClass}>{errors.fatherName.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Email Id</label>
                 <input
-                  className={inputClass}
+                  className={cls('fatherEmail')}
+                  {...lockProps('fatherEmail')}
                   {...register('fatherEmail', {
                     required: 'Required',
                     pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
@@ -146,7 +155,7 @@ function ClassParentDetails() {
                 <label className={labelClass}>{reqStar} Mobile Number</label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">+91</span>
-                  <input className={inputClass} {...register('fatherMobile', mobileRules(true))} />
+                  <input className={cls('fatherMobile')} {...lockProps('fatherMobile')} {...register('fatherMobile', mobileRules(true))} />
                 </div>
                 {errors.fatherMobile && <p className={errClass}>{errors.fatherMobile.message}</p>}
                 <label className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
@@ -162,13 +171,14 @@ function ClassParentDetails() {
 
               <div>
                 <label className={labelClass}>{reqStar} Mother's Name</label>
-                <input className={inputClass} {...register('motherName', nameRules("mother's name", true))} />
+                <input className={cls('motherName')} {...lockProps('motherName')} {...register('motherName', nameRules("mother's name", true))} />
                 {errors.motherName && <p className={errClass}>{errors.motherName.message}</p>}
               </div>
               <div>
                 <label className={labelClass}>{reqStar} Email Id</label>
                 <input
-                  className={inputClass}
+                  className={cls('motherEmail')}
+                  {...lockProps('motherEmail')}
                   {...register('motherEmail', {
                     required: 'Required',
                     pattern: { value: /^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}$/, message: 'Invalid email' },
@@ -180,7 +190,7 @@ function ClassParentDetails() {
                 <label className={labelClass}>{reqStar} Mobile Number</label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">+91</span>
-                  <input className={inputClass} {...register('motherMobile', mobileRules(true))} />
+                  <input className={cls('motherMobile')} {...lockProps('motherMobile')} {...register('motherMobile', mobileRules(true))} />
                 </div>
                 {errors.motherMobile && <p className={errClass}>{errors.motherMobile.message}</p>}
                 <label className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
@@ -281,7 +291,7 @@ function ClassParentDetails() {
             <div className="flex justify-between gap-3 pt-4 border-t border-slate-200">
               <button
                 type="button"
-                onClick={() => navigate(`/class/${classId}/application/address`)}
+                onClick={() => navigate(`/class/${classId}/application/siblings`)}
                 className="bg-slate-100 text-slate-700 text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-slate-200"
               >
                 Previous

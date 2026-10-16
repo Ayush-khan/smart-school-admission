@@ -47,7 +47,7 @@ function ClassAddressDetails() {
       })
       saveApplicationSection(classId, 'address', data)
       toast.success('Address details saved')
-      navigate(`/class/${classId}/application/parents`)
+      navigate(`/class/${classId}/application/siblings`)
     } catch (error) {
       toast.error(getErrorMessage(error, 'Could not save address details.'))
     } finally {
