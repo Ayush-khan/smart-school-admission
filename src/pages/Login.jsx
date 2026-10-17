@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import logo from '../assets/evolvu-logo.webp'
+import SchoolIdentity from '../components/SchoolIdentity'
 import { checkExistingUser, createRegistration, resendOtp, sendOtp } from '../services/authService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { saveSessionInfo, startResendCooldown, getResendRemaining } from '../utils/session'
@@ -261,13 +261,12 @@ function Login() {
     <div className="min-h-screen">
       <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Evolvu Smart School logo" className="w-10 h-10 bg-white rounded-full object-contain p-0.5 flex-shrink-0" />
-            <div className="leading-tight">
-              <h1 className="text-sm sm:text-base font-bold text-white">Evolvu Smart School</h1>
-              <p className="text-[10px] text-blue-200">Online Admission Portal</p>
-            </div>
-          </div>
+          <SchoolIdentity
+            containerClassName="flex items-center gap-3"
+            imageClassName="w-10 h-10 bg-white rounded-full object-contain p-0.5 flex-shrink-0"
+            nameClassName="text-sm sm:text-base font-bold text-white"
+            subtitleClassName="text-[10px] text-blue-200"
+          />
           <p className="text-xs sm:text-sm text-blue-100 hidden sm:block">{today}</p>
         </div>
       </header>
