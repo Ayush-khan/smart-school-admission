@@ -25,9 +25,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const url = error.config?.url || ''
-    const isAuthCall = /\/(verify-otp|send-otp|resend-otp|registration)(\/|\?|$)/.test(url)
+    const isPublicCall = /\/(verify-otp|send-otp|resend-otp|registration|get_school_information)(\/|\?|$)/.test(url)
 
-    if (error.response?.status === 401 && !isAuthCall) {
+    if (error.response?.status === 401 && !isPublicCall) {
       localStorage.removeItem('authToken')
       window.location.href = `${getSchoolBasePath()}/login`
     }

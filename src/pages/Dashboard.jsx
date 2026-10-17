@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import EnquiryModal from '../components/EnquiryModal'
 import EnquiryDetailsModal from '../components/EnquiryDetailsModal'
+import SchoolIdentity from '../components/SchoolIdentity'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDownload } from '@fortawesome/free-solid-svg-icons'
-import logo from '../assets/evolvu-logo.webp'
 import { getClasses, getClassesForUser, getEnquiryClasses, getDashboard, listOnlineForms, downloadOnlineFormPdf, listAdmissionEnquiries } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo, clearSession } from '../utils/session'
@@ -298,13 +298,12 @@ function Dashboard() {
     <div className="min-h-screen bg-page">
       <header className="bg-navy sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-1">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Evolvu Smart School logo" className="w-9 h-9 bg-white rounded-full object-contain p-0.5 flex-shrink-0" />
-            <div className="text-center sm:text-left leading-tight">
-              <h1 className="text-sm sm:text-base font-bold text-white">Evolvu Smart School</h1>
-              <p className="text-[10px] text-blue-200">Online Admission Portal</p>
-            </div>
-          </div>
+          <SchoolIdentity
+            containerClassName="flex items-center gap-3"
+            imageClassName="w-9 h-9 bg-white rounded-full object-contain p-0.5 flex-shrink-0"
+            nameClassName="text-center sm:text-left text-sm sm:text-base font-bold text-white"
+            subtitleClassName="text-[10px] text-blue-200"
+          />
           <div className="text-center sm:text-right">
             <p className="text-xs sm:text-sm text-white">Welcome, {fullName || 'Applicant'}</p>
             <button
