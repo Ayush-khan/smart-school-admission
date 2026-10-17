@@ -68,6 +68,7 @@ function VerifyOtp() {
         localStorage.setItem('authToken', token)
       }
 
+      saveSessionInfo({ narId, mode, contact })
       navigate('/dashboard')
     } catch (err) {
       setError(getErrorMessage(err, 'Incorrect OTP. Please try again.'))

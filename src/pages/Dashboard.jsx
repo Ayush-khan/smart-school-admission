@@ -15,6 +15,7 @@ import { formatClassLabel } from '../utils/classLabel'
 import { formatDMY } from '../utils/validators'
 
 const PAYMENT_INCOMPLETE_MESSAGE = 'Please complete all the required details before proceeding with the payment.'
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please log in again.'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -67,13 +68,12 @@ function Dashboard() {
   }, [])
 
     const loadUserClasses = useCallback(async () => {
-    try {
-      if (!narId) {
-        throw new Error('Your session has expired. Please log in again.')
-      }
-      const result = await getClassesForUser(narId)
-      const list = result.data ?? result
-      if (mountedRef.current) setUserClasses(Array.isArray(list) ? list : [])
+      if (!narId) return
+
+      try {
+        const result = await getClassesForUser(narId)
+        const list = result.data ?? result
+        if (mountedRef.current) setUserClasses(Array.isArray(list) ? list : [])
     } catch (err) {
       if (mountedRef.current) toast.error(getErrorMessage(err, 'Could not load classes.'))
     } finally {
@@ -83,10 +83,9 @@ function Dashboard() {
 
   // silent = true on refreshes, so no error toast and no loading flicker
   const loadSummary = useCallback(async (silent = false) => {
+    if (!narId) return
+
     try {
-      if (!narId) {
-        throw new Error('Your session has expired. Please log in again.')
-      }
       const result = await getDashboard(narId)
       const data = result.data ?? result
             if (mountedRef.current && data) {
@@ -119,6 +118,8 @@ function Dashboard() {
   }, [narId])
 
   const loadEnquiries = useCallback(async (silent = false) => {
+    if (!narId) return
+
     try {
       // ASSUMPTION: passing nar_id/contact as filters — UNCONFIRMED whether
       // backend actually honors these. Verify via Network tab.
@@ -144,6 +145,12 @@ function Dashboard() {
 
   // First load
     useEffect(() => {
+    if (!narId) {
+      toast.error(SESSION_EXPIRED_MESSAGE, { id: 'session-expired' })
+      navigate('/login', { replace: true })
+      return
+    }
+
     loadClasses()
     loadUserClasses()
     refreshCounts(false)
@@ -153,7 +160,7 @@ function Dashboard() {
         if (mountedRef.current) setEnquiryClasses(Array.isArray(list) ? list : [])
       })
       .catch(() => {})
-  }, [loadClasses, loadUserClasses, refreshCounts])
+  }, [loadClasses, loadUserClasses, navigate, narId, refreshCounts])
 
   // Refresh counts when the user comes back to this tab
   useEffect(() => {
