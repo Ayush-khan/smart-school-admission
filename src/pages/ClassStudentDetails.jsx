@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import { getFormId, getFormIdFromResponse, saveFormId } from '../utils/formId'
 import { getClasses, saveStudentDetails } from '../services/applicationService'
@@ -12,10 +12,11 @@ import InfoNote from '../components/InfoNote'
 import CustomSelect from '../components/CustomSelect'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { nameRules, dobRulesFor, getDobBounds, formatDMY } from '../utils/validators'
-import { formatClassLabel } from '../utils/classLabel'
+import { formatClassLabel, getClassShift } from '../utils/classLabel'
 
 function ClassStudentDetails() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { classId } = useParams()
   const [classData, setClassData] = useState(null)
   const [loadingClass, setLoadingClass] = useState(true)
@@ -43,11 +44,24 @@ function ClassStudentDetails() {
   useEffect(() => {
     getClasses()
       .then((result) => {
-        const selected = (result.data ?? result).find((item) => String(item.class_id ?? item.id) === String(classId))
-        if (selected) setClassData({ label: formatClassLabel(selected), dobBounds: getDobBounds(selected) })
+        const classList = result.data ?? result
+        const selectedClassType = location.state?.classType
+        const matchingClasses = classList.filter((item) => String(item.class_id ?? item.id) === String(classId))
+        const selected =
+          (selectedClassType !== undefined
+            ? matchingClasses.find((item) => getClassShift(item) === String(selectedClassType).trim())
+            : undefined) ?? matchingClasses[0]
+        if (selected) {
+          const classType = selectedClassType ?? getClassShift(selected)
+          setClassData({
+            label: formatClassLabel({ ...selected, type: classType }),
+            type: classType,
+            dobBounds: getDobBounds(selected),
+          })
+        }
       })
       .finally(() => setLoadingClass(false))
-  }, [classId])
+  }, [classId, location.state?.classType])
 
   const onSubmit = async (data) => {
     setSaving(true)
@@ -70,6 +84,7 @@ function ClassStudentDetails() {
         stud_aadhar: data.studAadhar || '',
         current_school_class: data.currentSchoolClass || '',
         class_id: classId,
+        type: classData.type,
         nar_id: getSessionInfo().narId,
       }
       const existingFormId = getFormId(classId)

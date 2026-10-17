@@ -180,7 +180,10 @@ function Dashboard() {
     clearFormId(classId)
     clearApplicationData(classId) // new admission starts empty; older forms keep their own saved data
     navigate(`/class/${classId}/instructions`, {
-      state: { academicYr: selectedClass.academic_yr ?? selectedClass.academicYear },
+      state: {
+        academicYr: selectedClass.academic_yr ?? selectedClass.academicYear,
+        classType: selectedClass.type ?? selectedClass.shift ?? '',
+      },
     })
   }
 
@@ -347,7 +350,7 @@ function Dashboard() {
               ) : (
                 userClasses.map((c, i) => (
                   <div
-                    key={c.id ?? c.class_id}
+                    key={`${c.id ?? c.class_id}-${c.type ?? c.shift ?? ''}`}
                     className={`transition-all duration-300 ease-out motion-reduce:transition-none ${
                       dropdownOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
                     }`}

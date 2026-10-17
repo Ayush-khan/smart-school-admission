@@ -252,7 +252,11 @@ function ClassInstructions() {
             <p className="text-xs text-center text-slate-500 mb-4">Principal</p>
             <div className="text-center">
               <button
-                onClick={() => navigate(`/class/${classId}/application/student`)}
+                onClick={() =>
+                  navigate(`/class/${classId}/application/student`, {
+                    state: { classType: location.state?.classType },
+                  })
+                }
                 className="bg-navy text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-navy-light"
               >
                 → Proceed to Application Form

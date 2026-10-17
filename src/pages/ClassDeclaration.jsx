@@ -164,7 +164,7 @@ function ClassDeclaration() {
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-1">Digital Signature</label>
             <p className="text-xs text-slate-500 mb-3">
-              Both options are optional. You can type your name, upload a signed PDF, or do both. At least one is needed.
+              You can type your name, upload a signed PDF, or do both. At least one option is required.
             </p>
 
             <div className="space-y-4">
