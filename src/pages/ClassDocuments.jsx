@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
+import InfoNote from '../components/InfoNote'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { getDocumentTypes } from '../services/applicationService'
 import { getErrorMessage } from '../services/apiHelpers'
@@ -465,9 +466,9 @@ function ClassDocuments() {
             📄 Document Upload
           </h2>
 
-          <p className="text-sm text-slate-500 text-center mt-3 mb-6">
+          <InfoNote className="mt-3 mb-6">
             Upload clear scanned copies or photos of the following documents.
-          </p>
+          </InfoNote>
 
           {loadingDocTypes || loadingSaved ? (
             <p className="text-sm text-slate-500 text-center py-6">

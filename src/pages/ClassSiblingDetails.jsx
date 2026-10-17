@@ -3,6 +3,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
+import InfoNote from '../components/InfoNote'
 import { saveApplicationSection, getApplicationData } from '../utils/applicationData'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { saveAdmissionSection as saveToApi } from '../utils/saveAdmissionSection'
@@ -183,6 +184,11 @@ function ClassSiblingDetails() {
       : null,
   )
   const [lookupError, setLookupError] = useState('')
+  // Class+name of the last Browse attempt. Used so Enter runs Browse once per sibling entry,
+  // and a second Enter goes on to Save & Continue (even if Browse found nothing).
+  const lastBrowseKey = useRef(
+    lookup ? `${lookup.classValue}|${lookup.name}` : '',
+  )
   const locked = hasSibling && lookup ? lockedFieldsFromApi(lookup.info?.parent) : {}
 
   const savedParents = { ...(savedData.parents || {}), ...locked }
@@ -251,6 +257,7 @@ function ClassSiblingDetails() {
     const values = getValues()
     const selectedClass = classes.find((item) => item.value === String(values.siblingClassId))
     const studentName = String(values.studentName).trim()
+    lastBrowseKey.current = `${values.siblingClassId}|${studentName}`
 
     setBrowsing(true)
     try {
@@ -276,6 +283,27 @@ function ClassSiblingDetails() {
       setLookupError(getErrorMessage(error, 'Could not fetch the student details.'))
     } finally {
       setBrowsing(false)
+    }
+  }
+
+  // Enter: 1st press runs Browse (sibling ticked + class and name filled), 2nd press submits.
+  const handleFormKeyDown = (event) => {
+    if (event.key !== 'Enter') return
+    if (event.target.tagName === 'BUTTON') return // buttons keep their normal Enter behaviour
+    if (!hasSibling) return
+
+    const { siblingClassId, studentName } = getValues()
+    const name = String(studentName || '').trim()
+    if (!siblingClassId || !name) return
+
+    if (browsing) {
+      event.preventDefault() // ignore Enter while the lookup is running
+      return
+    }
+    const alreadyBrowsed = Boolean(lookup) || lastBrowseKey.current === `${siblingClassId}|${name}`
+    if (!alreadyBrowsed) {
+      event.preventDefault()
+      handleBrowse()
     }
   }
 
@@ -359,7 +387,7 @@ function ClassSiblingDetails() {
             👨‍👩‍👧 Sibling Information
           </h2>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className="space-y-6">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-slate-700">Sibling:</label>
               <input
@@ -436,9 +464,9 @@ function ClassSiblingDetails() {
               <h2 className="text-center text-teal-700 font-semibold mb-6 border-b border-slate-200 pb-3">
                 👤 Parent's Information
               </h2>
-              <p className="text-sm text-slate-600 mb-4">
+              <InfoNote>
                 Kindly ensure your contact details are true and correct. This number will be used for all further communication
-              </p>
+              </InfoNote>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className={labelClass}>{reqStar} Father's Name</label>

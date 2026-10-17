@@ -8,6 +8,7 @@ import { getErrorMessage } from '../services/apiHelpers'
 import { getSessionInfo } from '../utils/session'
 import toast from 'react-hot-toast'
 import ClassLayout from '../layouts/ClassLayout'
+import InfoNote from '../components/InfoNote'
 import CustomSelect from '../components/CustomSelect'
 import ApplicationStepperLayout from '../layouts/ApplicationStepperLayout'
 import { nameRules, dobRulesFor, getDobBounds, formatDMY } from '../utils/validators'
@@ -201,7 +202,7 @@ function ClassStudentDetails() {
               <h2 className="text-center text-teal-700 font-semibold mb-1 border-b border-slate-200 pb-3">
                 ⭐ Additional Information
               </h2>
-              <p className="text-sm text-slate-500 mt-3 mb-6 text-center">All fields in this section are optional.</p>
+              <InfoNote className="mt-3 mb-6">All fields in this section are optional.</InfoNote>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>Student Aadhaar Card No.</label>
