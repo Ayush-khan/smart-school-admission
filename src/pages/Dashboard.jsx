@@ -67,13 +67,13 @@ function Dashboard() {
     }
   }, [])
 
-    const loadUserClasses = useCallback(async () => {
-      if (!narId) return
+  const loadUserClasses = useCallback(async () => {
+    if (!narId) return
 
-      try {
-        const result = await getClassesForUser(narId)
-        const list = result.data ?? result
-        if (mountedRef.current) setUserClasses(Array.isArray(list) ? list : [])
+    try {
+      const result = await getClassesForUser(narId)
+      const list = result.data ?? result
+      if (mountedRef.current) setUserClasses(Array.isArray(list) ? list : [])
     } catch (err) {
       if (mountedRef.current) toast.error(getErrorMessage(err, 'Could not load classes.'))
     } finally {
@@ -88,14 +88,14 @@ function Dashboard() {
     try {
       const result = await getDashboard(narId)
       const data = result.data ?? result
-            if (mountedRef.current && data) {
+      if (mountedRef.current && data) {
         setSummary({
           totalFormsRegistered: data.forms_count ?? 0,
           amountPaid: data.amount_paid ?? 0,
         })
         setApplications(Array.isArray(data.applications) ? data.applications : [])
       }
-      
+
     } catch (err) {
       if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load dashboard summary.'))
     } finally {
@@ -108,7 +108,7 @@ function Dashboard() {
       if (!narId) return
       const result = await listOnlineForms({ nar_id: narId })
       const list = result.data ?? result
-      
+
       if (mountedRef.current) setForms(Array.isArray(list) ? list : [])
     } catch (err) {
       if (mountedRef.current && !silent) toast.error(getErrorMessage(err, 'Could not load your applications.'))
@@ -144,7 +144,7 @@ function Dashboard() {
   )
 
   // First load
-    useEffect(() => {
+  useEffect(() => {
     if (!narId) {
       toast.error(SESSION_EXPIRED_MESSAGE, { id: 'session-expired' })
       navigate('/login', { replace: true })
@@ -159,7 +159,7 @@ function Dashboard() {
         const list = r?.data?.classes ?? []
         if (mountedRef.current) setEnquiryClasses(Array.isArray(list) ? list : [])
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [loadClasses, loadUserClasses, navigate, narId, refreshCounts])
 
   // Refresh counts when the user comes back to this tab
@@ -289,7 +289,7 @@ function Dashboard() {
     )
   }
 
-    // Payment info comes from the dashboard API (applications[]), matched by form_id.
+  // Payment info comes from the dashboard API (applications[]), matched by form_id.
   const getAppInfo = (form) => applications.find((a) => String(a.form_id) === String(form.form_id))
 
   const getPaymentStatus = (form) =>
@@ -337,20 +337,18 @@ function Dashboard() {
               onClick={() => setDropdownOpen((prev) => !prev)}
               disabled={loadingUserClasses}
               aria-expanded={dropdownOpen}
-              className={`w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-navy text-sm font-medium transition-all duration-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brass disabled:opacity-60 ${
-                dropdownOpen ? 'ring-2 ring-brass' : ''
-              }`}
+              className={`w-full flex items-center justify-between rounded-lg px-3 py-2 bg-white text-navy text-sm font-medium transition-all duration-200 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brass disabled:opacity-60 ${dropdownOpen ? 'ring-2 ring-brass' : ''
+                }`}
             >
               {loadingUserClasses ? 'Loading classes...' : 'SELECT CLASS'}
               <span className={`text-brass transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}>▾</span>
             </button>
 
             <div
-              className={`absolute left-6 right-6 mt-2 bg-white rounded-lg shadow-2xl ring-1 ring-black/5 overflow-hidden z-50 text-slate-800 origin-top transition-all duration-200 ease-out motion-reduce:transition-none ${
-                dropdownOpen
+              className={`absolute left-6 right-6 mt-2 bg-white rounded-lg shadow-2xl ring-1 ring-black/5 overflow-hidden z-50 text-slate-800 origin-top transition-all duration-200 ease-out motion-reduce:transition-none ${dropdownOpen
                   ? 'opacity-100 translate-y-0 scale-100 visible'
                   : 'opacity-0 -translate-y-2 scale-95 invisible pointer-events-none'
-              }`}
+                }`}
             >
               {userClasses.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-slate-500">No classes available.</p>
@@ -358,9 +356,8 @@ function Dashboard() {
                 userClasses.map((c, i) => (
                   <div
                     key={`${c.id ?? c.class_id}-${c.type ?? c.shift ?? ''}`}
-                    className={`transition-all duration-300 ease-out motion-reduce:transition-none ${
-                      dropdownOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
-                    }`}
+                    className={`transition-all duration-300 ease-out motion-reduce:transition-none ${dropdownOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+                      }`}
                     style={{ transitionDelay: dropdownOpen ? `${80 + i * 45}ms` : '0ms' }}
                   >
                     <button
@@ -411,22 +408,20 @@ function Dashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('applications')}
-            className={`px-5 py-2 text-sm font-semibold rounded-t-lg border-t-4 transition-all duration-200 ${
-              activeTab === 'applications'
+            className={`px-5 py-2 text-sm font-semibold rounded-t-lg border-t-4 transition-all duration-200 ${activeTab === 'applications'
                 ? 'bg-white text-navy shadow border-brass'
                 : 'bg-slate-100 text-slate-500 border-transparent hover:bg-white/70 hover:text-navy'
-            }`}
+              }`}
           >
             Admission Applications
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('enquiries')}
-            className={`px-5 py-2 text-sm font-semibold rounded-t-lg border-t-4 transition-all duration-200 ${
-              activeTab === 'enquiries'
+            className={`px-5 py-2 text-sm font-semibold rounded-t-lg border-t-4 transition-all duration-200 ${activeTab === 'enquiries'
                 ? 'bg-white text-navy shadow border-brass'
                 : 'bg-slate-100 text-slate-500 border-transparent hover:bg-white/70 hover:text-navy'
-            }`}
+              }`}
           >
             Enquiries
           </button>
@@ -477,28 +472,28 @@ function Dashboard() {
                       <td className="px-4 py-3">{form.interview_date ?? 'No interview scheduled.'}</td>
                       <td className="px-4 py-3">{getPaymentLabel(form)}</td>
                       <td className="px-4 py-3">
-                      {isPaid(form) ? (
-                        <span className="inline-flex items-center text-green-600" title="Payment completed" aria-label="Payment completed">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        </span>
-                      ) : (
-                        (() => {
-                          const ready = isApplicationComplete(form.class_id, form.form_id)
-                          return (
-                            <button
-                              onClick={() => handlePayForm(form)}
-                              aria-disabled={!ready}
-                              className={ready ? 'text-teal-600 hover:text-teal-800' : 'text-slate-400 opacity-50 cursor-not-allowed'}
-                              title={ready ? 'Payment' : PAYMENT_INCOMPLETE_MESSAGE}
-                            >
-                              💳
-                            </button>
-                          )
-                        })()
-                      )}
-                    </td>
+                        {isPaid(form) ? (
+                          <span className="inline-flex items-center text-green-600" title="Payment completed" aria-label="Payment completed">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                        ) : (
+                          (() => {
+                            const ready = isApplicationComplete(form.class_id, form.form_id)
+                            return (
+                              <button
+                                onClick={() => handlePayForm(form)}
+                                aria-disabled={!ready}
+                                className={ready ? 'text-teal-600 hover:text-teal-800' : 'text-slate-400 opacity-50 cursor-not-allowed'}
+                                title={ready ? 'Payment' : PAYMENT_INCOMPLETE_MESSAGE}
+                              >
+                                💳
+                              </button>
+                            )
+                          })()
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         {isPaid(form) ? (
                           <button
@@ -549,7 +544,7 @@ function Dashboard() {
                 ) : enquiries.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
-                     No enquiries have been submitted yet.
+                      No enquiries have been submitted yet.
                     </td>
                   </tr>
                 ) : (
