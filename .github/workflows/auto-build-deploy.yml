@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # develop = test build, main = live build
-      BUILD_COMMAND: ${{ github.ref == 'refs/heads/develop' && 'npm run dev:test' || 'npm run dev' }}
+      BUILD_COMMAND: ${{ github.ref == 'refs/heads/develop' && 'npm run build:test' || 'npm run build' }}
       TARGET_BRANCH: ${{ github.ref == 'refs/heads/develop' && 'deploycommon' || 'deploy' }}
 
     steps:
